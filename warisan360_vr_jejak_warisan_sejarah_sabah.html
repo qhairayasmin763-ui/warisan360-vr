@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WARISAN360 VR: Jejak Warisan Sejarah Sabah</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & Cinzel (untuk sentuhan warisan) -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome untuk Ikon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Three.js untuk Model 3D & Lawatan Maya 360° -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Google MediaPipe Hands & Camera Utils untuk Permainan Kuiz Sasaran -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            heritage: {
+              navy: '#0F1E36',      // Biru gelap bersejarah
+              navyLight: '#1B3156',
+              wood: '#5C3A21',      // Coklat kayu Merbau/Belian
+              woodLight: '#8B5A2B',
+              gold: '#D4AF37',      // Emas warisan
+              goldLight: '#F3E5AB',
+              cream: '#FAF8F5'      // Putih gading lembut
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Cinzel', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FAF8F5;
+      color: #0F1E36;
+      overflow-x: hidden;
+    }
+    .font-heritage {
+      font-family: 'Cinzel', serif;
+    }
+    /* Mod Kontras Tinggi / Akses Inklusif */
+    body.high-contrast {
+      background-color: #000000 !important;
+      color: #FFFFFF !important;
+    }
+    body.high-contrast .bg-white,
+    body.high-contrast .bg-heritage-cream {
+      background-color: #111827 !important;
+      color: #FFFFFF !important;
+      border-color: #D4AF37 !important;
+    }
+    body.high-contrast .text-slate-600,
+    body.high-contrast .text-slate-700,
+    body.high-contrast .text-heritage-navy {
+      color: #F3F4F6 !important;
+    }
+    body.large-text {
+      font-size: 1.15rem;
+    }
+    /* Animasi Halus */
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-float {
+      animation: floatSlow 4s ease-in-out infinite;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0F1E36;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D4AF37;
+      border-radius: 4px;
+    }
+    /* Cetak Sijil */
+    @media print {
+      body * { visibility: hidden; }
+      #printable-certificate, #printable-certificate * { visibility: visible; }
+      #printable-certificate {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- BAR NAVIGASI UTAMA & AKSES INKLUSIF -->
+  <header class="bg-heritage-navy text-white shadow-xl sticky top-0 z-50 border-b-2 border-heritage-gold">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Logo & Tajuk -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-heritage-gold to-heritage-wood flex items-center justify-center shadow-lg border border-white/20">
+          <i class="fa-solid fa-landmark text-heritage-navy text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-heritage font-bold text-lg sm:text-xl tracking-wider text-heritage-gold leading-tight">WARISAN360 VR</h1>
+          <p class="text-[11px] text-slate-300 tracking-wide" data-i18n="subtitle">Jejak Warisan Sejarah Sabah</p>
+        </div>
+      </div>
+
+      <!-- Kawalan Akses Inklusif (Bahasa, Teks Besar, Kontras, Audio) -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="toggleLanguage()" class="px-3 py-1.5 rounded-lg bg-heritage-navyLight hover:bg-heritage-wood text-xs font-semibold border border-heritage-gold/40 transition flex items-center gap-1.5" title="Tukar Bahasa / Switch Language">
+          <i class="fa-solid fa-language text-heritage-gold"></i>
+          <span id="lang-label">BM | EN</span>
+        </button>
+        <button onclick="toggleFontSize()" class="px-2.5 py-1.5 rounded-lg bg-heritage-navyLight hover:bg-heritage-wood text-xs font-semibold border border-white/10 transition" title="Saiz Teks Inklusif">
+          <i class="fa-solid fa-text-height text-heritage-gold"></i> A+
+        </button>
+        <button onclick="toggleContrast()" class="px-2.5 py-1.5 rounded-lg bg-heritage-navyLight hover:bg-heritage-wood text-xs font-semibold border border-white/10 transition" title="Mod Kontras Tinggi">
+          <i class="fa-solid fa-circle-half-stroke text-heritage-gold"></i>
+        </button>
+        <button onclick="stopAudio()" id="global-stop-audio" class="hidden px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-xs font-semibold transition flex items-center gap-1">
+          <i class="fa-solid fa-volume-xmark"></i> <span data-i18n="stopAudio">Henti Audio</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Menu 8 Halaman Aplikasi -->
+    <nav class="bg-heritage-navyLight/90 border-t border-white/10 overflow-x-auto">
+      <div class="max-w-7xl mx-auto px-4 flex items-center gap-1 sm:gap-2 py-2 whitespace-nowrap text-xs sm:text-sm font-medium">
+        <button onclick="navigateTo('home')" data-nav="home" class="nav-btn px-3 py-2 rounded-lg transition flex items-center gap-1.5 bg-heritage-gold text-heritage-navy font-bold">
+          <i class="fa-solid fa-house"></i> <span data-i18n="nav1">1. Utama</span>
+        </button>
+        <button onclick="navigateTo('intro')" data-nav="intro" class="nav-btn px-3 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-book-open"></i> <span data-i18n="nav2">2. Sejarah & Rekonstruksi</span>
+        </button>
+        <button onclick="navigateTo('vr360')" data-nav="vr360" class="nav-btn px-3 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-vr-cardboard"></i> <span data-i18n="nav3">3. Lawatan Maya 360°</span>
+        </button>
+        <button onclick="navigateTo('model3d')" data-nav="model3d" class="nav-btn px-3 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-cubes"></i> <span data-i18n="nav4">4. Model 3D</span>
+        </button>
+        <button onclick="navigateTo('timeline')" data-nav="timeline" class="nav-btn px-3 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="nav5">5. Garis Masa</span>
+        </button>
+        <button onclick="navigateTo('biography')" data-nav="biography" class="nav-btn px-3 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-torii-gate"></i> <span data-i18n="nav6">6. Budaya & Etnik Sabah</span>
+        </button>
+        <button onclick="navigateTo('quiz')" data-nav="quiz" class="nav-btn px-3 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-gamepad"></i> <span data-i18n="nav7">7. Misi & Kuiz AR</span>
+        </button>
+        <button onclick="navigateTo('certificate')" data-nav="certificate" class="nav-btn px-3 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-award"></i> <span data-i18n="nav8">8. Sijil Digital</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- PAPARAN SARI KATA NARATIF AUDIO (INKLUSIF) -->
+  <div id="subtitle-banner" class="hidden bg-heritage-wood text-white px-4 py-2.5 text-center text-sm border-b border-heritage-gold shadow-md transition-all">
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-3">
+      <i class="fa-solid fa-closed-captioning text-heritage-gold text-lg animate-pulse"></i>
+      <p id="subtitle-text" class="font-medium italic">Naratif audio sedang dimainkan...</p>
+    </div>
+  </div>
+
+  <!-- KANDUNGAN UTAMA (8 HALAMAN) -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 sm:py-8">
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 1: HALAMAN UTAMA – WARISAN360 VR   -->
+    <!-- ========================================== -->
+    <section id="page-home" class="page-section space-y-8">
+      <!-- Hero Banner -->
+      <div class="relative rounded-3xl overflow-hidden bg-gradient-to-br from-heritage-navy via-heritage-navyLight to-heritage-wood text-white p-6 sm:p-12 shadow-2xl border border-heritage-gold/40">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div class="lg:col-span-7 space-y-5">
+            <span class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-heritage-gold/20 border border-heritage-gold text-heritage-gold text-xs font-bold uppercase tracking-wider">
+              <i class="fa-solid fa-compass"></i> <span data-i18n="heroBadge">Inovasi Pendidikan Warisan Sabah</span>
+            </span>
+            <h2 class="font-heritage text-3xl sm:text-5xl font-extrabold leading-tight text-white">
+              WARISAN360 VR: <span class="text-heritage-gold block sm:inline">JEJAK WARISAN SEJARAH SABAH</span>
+            </h2>
+            <p class="text-slate-200 text-base sm:text-lg leading-relaxed" data-i18n="heroDesc">
+              Menelusuri sejarah Negeri di Bawah Bayu tanpa sempadan. Terokai monumen ikonik Sabah seperti Menara Jam Atkinson (1905), Pejabat Pos Lama Jesselton (1918), Tugu Peringatan Perang Petagas (1946), dan Rumah Tradisional Etnik Sabah melalui lawatan maya 360°, model 3D, dan kuiz pengecaman isyarat tangan.
+            </p>
+            <div class="flex flex-wrap gap-3 pt-2">
+              <button onclick="navigateTo('vr360')" class="px-6 py-3.5 rounded-xl bg-heritage-gold hover:bg-yellow-500 text-heritage-navy font-bold text-sm shadow-lg transition flex items-center gap-2">
+                <i class="fa-solid fa-vr-cardboard"></i> <span data-i18n="btnStartVR">Mula Lawatan Maya 360°</span>
+              </button>
+              <button onclick="navigateTo('model3d')" class="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/30 font-semibold text-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-cube text-heritage-gold"></i> <span data-i18n="btnExplore3D">Terokai Model 3D</span>
+              </button>
+              <button onclick="playNarration('home')" class="px-5 py-3.5 rounded-xl bg-heritage-wood hover:bg-heritage-woodLight text-white border border-heritage-gold/50 font-semibold text-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-volume-high text-heritage-gold"></i> <span data-i18n="btnListen">Dengar Pengenalan</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Ilustrasi Menara Jam Atkinson (Rujukan Gambar 2) -->
+          <div class="lg:col-span-5 flex justify-center">
+            <div class="relative w-64 sm:w-72 h-80 rounded-3xl bg-gradient-to-b from-sky-900/60 to-emerald-950/80 border border-heritage-gold/40 p-4 flex flex-col items-center justify-end shadow-inner animate-float overflow-hidden">
+              <div class="absolute inset-x-0 bottom-0 h-28 bg-emerald-950/90 rounded-t-full scale-125"></div>
+              <svg viewBox="0 0 220 270" class="relative z-10 w-full h-full drop-shadow-2xl">
+                <g stroke="#F8FAFC" stroke-width="1.5" fill="none">
+                  <line x1="25" y1="238" x2="195" y2="238" />
+                  <line x1="25" y1="252" x2="195" y2="252" />
+                  <line x1="35" y1="234" x2="35" y2="256" />
+                  <line x1="55" y1="234" x2="55" y2="256" />
+                  <line x1="165" y1="234" x2="165" y2="256" />
+                  <line x1="185" y1="234" x2="185" y2="256" />
+                </g>
+                <rect x="65" y="246" width="90" height="10" rx="2" fill="#E2E8F0" />
+                <rect x="74" y="236" width="72" height="10" rx="2" fill="#F1F5F9" />
+                <rect x="82" y="64" width="56" height="172" fill="#FAF6EE" stroke="#CBD5E1" stroke-width="1.5" />
+                <line x1="110" y1="64" x2="110" y2="236" stroke="#CBD5E1" stroke-width="1.5" />
+                <path d="M117 236 L117 216 A6 6 0 0 1 129 216 L129 236 Z" fill="#1E293B" />
+                <rect x="89" y="128" width="14" height="78" fill="#475569" rx="1" />
+                <rect x="117" y="128" width="14" height="78" fill="#475569" rx="1" />
+                <g stroke="#94A3B8" stroke-width="1">
+                  <line x1="91" y1="136" x2="101" y2="136" /><line x1="91" y1="146" x2="101" y2="146" />
+                  <line x1="91" y1="156" x2="101" y2="156" /><line x1="91" y1="166" x2="101" y2="166" />
+                  <line x1="91" y1="176" x2="101" y2="176" /><line x1="91" y1="186" x2="101" y2="186" />
+                  <line x1="119" y1="136" x2="129" y2="136" /><line x1="119" y1="146" x2="129" y2="146" />
+                  <line x1="119" y1="156" x2="129" y2="156" /><line x1="119" y1="166" x2="129" y2="166" />
+                  <line x1="119" y1="176" x2="129" y2="176" /><line x1="119" y1="186" x2="129" y2="186" />
+                </g>
+                <path d="M87 98 Q96 86 105 98" fill="none" stroke="#1E293B" stroke-width="2.5" />
+                <path d="M115 98 Q124 86 133 98" fill="none" stroke="#1E293B" stroke-width="2.5" />
+                <circle cx="96" cy="109" r="9.5" fill="#FFFFFF" stroke="#1E293B" stroke-width="2" />
+                <line x1="96" y1="109" x2="96" y2="103" stroke="#1E293B" stroke-width="1.5" />
+                <line x1="96" y1="109" x2="101" y2="109" stroke="#1E293B" stroke-width="1.5" />
+                <circle cx="124" cy="109" r="9.5" fill="#FFFFFF" stroke="#1E293B" stroke-width="2" />
+                <line x1="124" y1="109" x2="124" y2="103" stroke="#1E293B" stroke-width="1.5" />
+                <line x1="124" y1="109" x2="129" y2="109" stroke="#1E293B" stroke-width="1.5" />
+                <rect x="93" y="72" width="6" height="10" rx="3" fill="#334155" />
+                <rect x="121" y="72" width="6" height="10" rx="3" fill="#334155" />
+                <rect x="76" y="61" width="68" height="4" rx="1" fill="#4A2E1B" />
+                <path d="M74 61 Q102 52 110 28 Q118 52 146 61 Z" fill="#D96B27" stroke="#9A3412" stroke-width="1.5" />
+                <line x1="110" y1="28" x2="110" y2="10" stroke="#D4AF37" stroke-width="2.5" />
+                <line x1="102" y1="16" x2="118" y2="16" stroke="#D4AF37" stroke-width="2" />
+                <circle cx="110" cy="10" r="2.5" fill="#F3E5AB" />
+              </svg>
+              <span class="relative z-10 text-xs text-heritage-goldLight font-semibold mt-1 tracking-wide">Ikon Warisan Sejarah Sabah</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kad Ringkasan Fakta Pantas Warisan Sabah -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-md border-l-4 border-heritage-wood space-y-2">
+          <div class="w-10 h-10 rounded-xl bg-heritage-wood/10 text-heritage-wood flex items-center justify-center text-lg">
+            <i class="fa-solid fa-landmark"></i>
+          </div>
+          <h3 class="font-bold text-lg text-heritage-navy">Monumen Seni Bina Era Jesselton</h3>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Menampilkan Menara Jam Atkinson (1905) dan Bangunan Pejabat Pos Lama Jesselton (1918) yang masih utuh berdiri sejak era Borneo Utara British.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-md border-l-4 border-heritage-gold space-y-2">
+          <div class="w-10 h-10 rounded-xl bg-heritage-gold/20 text-heritage-wood flex items-center justify-center text-lg">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <h3 class="font-bold text-lg text-heritage-navy">Memori Perjuangan & Petagas</h3>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Mengabadikan keberanian 324 pejuang Gerila Kinabalu di Tugu Peringatan Perang Petagas (1946) yang mempertahankan tanah air semasa Perang Dunia Kedua.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-md border-l-4 border-heritage-navy space-y-2">
+          <div class="w-10 h-10 rounded-xl bg-heritage-navy/10 text-heritage-navy flex items-center justify-center text-lg">
+            <i class="fa-solid fa-people-group"></i>
+          </div>
+          <h3 class="font-bold text-lg text-heritage-navy">Seni & Budaya Etnik Sabah</h3>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Memelihara kehalusan seni bina rumah tradisional bertiang tinggi, atap rumbia serta warisan gong tembaga masyarakat peribumi Sabah.
+          </p>
+        </div>
+      </div>
+
+      <!-- Status Kemajuan Pembelajaran Pengguna -->
+      <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-heritage-navy text-heritage-gold flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-medal"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-heritage-navy">Kemajuan Misi Eksplorasi Warisan Anda</h4>
+            <p class="text-xs text-slate-500">Lengkapkan terokaan & kuiz untuk menjana Sijil Digital Rasmi WARISAN360 VR.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 w-full sm:w-auto">
+          <div class="flex-grow sm:w-48 bg-slate-200 h-3 rounded-full overflow-hidden">
+            <div id="home-progress-bar" class="bg-heritage-gold h-full transition-all duration-500" style="width: 20%;"></div>
+          </div>
+          <span id="home-progress-text" class="font-bold text-sm text-heritage-navy">20%</span>
+          <button onclick="navigateTo('quiz')" class="px-4 py-2 rounded-xl bg-heritage-navy text-white text-xs font-semibold hover:bg-heritage-wood transition">
+            Teruskan Misi
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- HALAMAN 2: SEJARAH & REKONSTRUKSI WARISAN SABAH            -->
+    <!-- ========================================================== -->
+    <section id="page-intro" class="page-section hidden space-y-8">
+      <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-heritage-wood">Arkib & Rekonstruksi Visual</span>
+          <h2 class="font-heritage text-2xl sm:text-3xl font-bold text-heritage-navy">Pengenalan Sejarah & Perbandingan Rekonstruksi</h2>
+        </div>
+        <button onclick="playNarration('intro')" class="px-4 py-2 rounded-xl bg-heritage-navy text-white text-xs font-bold flex items-center gap-2 hover:bg-heritage-wood transition">
+          <i class="fa-solid fa-volume-high text-heritage-gold"></i> Dengar Naratif Sejarah
+        </button>
+      </div>
+
+      <!-- Peluncur Perbandingan Visual Dahulu (Rekonstruksi 1905) vs Masa Kini -->
+      <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-200 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="font-bold text-lg text-heritage-navy">Perbandingan Visual: Jesselton Era 1905 (Rekonstruksi) vs Masa Kini</h3>
+          <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
+            <i class="fa-solid fa-circle-info"></i> Visual sebelah kiri ialah rekonstruksi sejarah
+          </span>
+        </div>
+
+        <div class="relative w-full h-72 sm:h-80 rounded-2xl overflow-hidden border-2 border-heritage-wood select-none">
+          <!-- Lapisan Kanan: Keadaan Masa Kini -->
+          <div class="absolute inset-0 bg-gradient-to-b from-sky-500 to-emerald-800 flex flex-col items-center justify-center text-white p-6">
+            <span class="absolute top-3 right-3 px-3 py-1 rounded-full bg-emerald-900/90 border border-emerald-400 text-xs font-bold">
+              Fakta Disahkan • Kota Kinabalu (Kini)
+            </span>
+            <i class="fa-solid fa-city text-5xl text-white/90 mb-3"></i>
+            <h4 class="font-heritage text-xl font-bold">Bandaraya Kota Kinabalu Moden</h4>
+            <p class="text-xs sm:text-sm text-center max-w-md mt-2 text-sky-100">
+              Menara Jam Atkinson (1905) dan Bangunan Pejabat Pos Lama (1918) kekal dipelihara sebagai monumen warisan di tengah pembangunan moden ibu negeri Sabah.
+            </p>
+          </div>
+
+          <!-- Lapisan Kiri: Visual Rekonstruksi 1905 -->
+          <div id="reconstruction-overlay" class="absolute inset-y-0 left-0 bg-gradient-to-b from-amber-900 via-stone-800 to-amber-950 text-amber-50 overflow-hidden" style="width: 50%;">
+            <div class="w-[600px] sm:w-[900px] h-full flex flex-col justify-center p-6">
+              <span class="inline-block w-fit px-3 py-1 rounded-full bg-amber-600/90 border border-amber-300 text-xs font-bold mb-3">
+                VISUAL REKONSTRUKSI • Era Jesselton (1905)
+              </span>
+              <h4 class="font-heritage text-xl font-bold text-heritage-gold">Suasana Pelabuhan Kayu Jesselton</h4>
+              <p class="text-xs sm:text-sm max-w-md mt-2 text-amber-100/90">
+                Pekan pesisir pantai yang dikelilingi hutan bukit menghijau dengan jeti kayu, landasan kereta api Borneo Utara, dan Menara Jam Atkinson sebagai panduan waktu kapal.
+              </p>
+            </div>
+          </div>
+
+          <!-- Garis Pembahagi Peluncur -->
+          <div id="slider-divider" class="absolute inset-y-0 w-1 bg-heritage-gold shadow-lg pointer-events-none" style="left: 50%;">
+            <div class="w-8 h-8 rounded-full bg-heritage-gold text-heritage-navy flex items-center justify-center font-bold text-xs -ml-3.5 mt-32 shadow-xl border-2 border-white">
+              <i class="fa-solid fa-arrows-left-right"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold text-heritage-wood">Rekonstruksi 1905</span>
+          <input type="range" min="5" max="95" value="50" oninput="updateComparisonSlider(this.value)" class="flex-grow accent-heritage-gold cursor-pointer">
+          <span class="text-xs font-bold text-heritage-navy">Keadaan Kini</span>
+        </div>
+      </div>
+
+      <!-- Kad Fakta Sejarah Disahkan vs Rekonstruksi -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-emerald-600 space-y-3">
+          <span class="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold">
+            <i class="fa-solid fa-check-circle"></i> Bahan & Fakta Sejarah Disahkan
+          </span>
+          <h4 class="font-bold text-lg text-heritage-navy">Monumen Warisan Sabah yang Masih Berdiri</h4>
+          <ul class="text-sm text-slate-700 space-y-2 list-disc pl-5">
+            <li><strong>Menara Jam Atkinson (1905):</strong> Dibina bagi memperingati Francis George Atkinson (Pegawai Daerah pertama Jesselton yang meninggal dunia akibat malaria pada 1902 berusia 28 tahun) oleh ibunya, Mary Edith Atkinson.</li>
+            <li><strong>Bangunan Pejabat Pos Lama Jesselton (1918):</strong> Terletak di Jalan Gaya dan terselamat daripada kemusnahan Perang Dunia Kedua.</li>
+            <li><strong>Tugu Peringatan Perang Petagas (1946):</strong> Mengabadikan pengorbanan 324 pejuang Gerila Kinabalu di Putatan.</li>
+          </ul>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-amber-600 space-y-3">
+          <span class="px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 text-xs font-bold">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Panduan Label Rekonstruksi Digital
+          </span>
+          <h4 class="font-bold text-lg text-heritage-navy">Perbezaan Artifak Asal & Paparan Maya</h4>
+          <p class="text-sm text-slate-700 leading-relaxed">
+            Setiap visual suasana pelabuhan lama Jesselton serta susun atur diorama galeri 3D dalam aplikasi ini dilabelkan secara telus sebagai <strong>Rekonstruksi Digital</strong> bagi membantu pelajar memahami konteks sejarah tanpa mengubah fakta sebenar.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- HALAMAN 3: LAWATAN MAYA 360 DARJAH (MUZIUM WARISAN SABAH)  -->
+    <!-- ========================================================== -->
+    <section id="page-vr360" class="page-section hidden space-y-5">
+      <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-heritage-wood">Galeri Interaktif 360° • Pergerakan Bebas WASD</span>
+          <h2 class="font-heritage text-2xl sm:text-3xl font-bold text-heritage-navy">Lawatan Maya 360°: Dewan Utama Warisan Sabah</h2>
+        </div>
+
+        <!-- Pilihan Peranti VR -->
+        <div class="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold">
+          <button id="mode-desktop" onclick="setVRDeviceMode('desktop')" class="vr-mode-btn px-3 py-1.5 rounded-lg bg-heritage-navy text-white transition">
+            <i class="fa-solid fa-desktop"></i> Komputer
+          </button>
+          <button id="mode-mobile" onclick="setVRDeviceMode('mobile')" class="vr-mode-btn px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">
+            <i class="fa-solid fa-mobile-screen"></i> Telefon
+          </button>
+          <button id="mode-vr" onclick="setVRDeviceMode('vr')" class="vr-mode-btn px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">
+            <i class="fa-solid fa-vr-cardboard"></i> VR Headset
+          </button>
+        </div>
+      </div>
+
+      <!-- Butang Pintasan Zon Warisan Sabah -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-bold text-heritage-navy mr-1"><i class="fa-solid fa-location-dot text-heritage-wood"></i> Terus ke Tapak Warisan:</span>
+        <button onclick="focusHotspot(0)" class="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-400 text-xs font-bold transition">
+          1. Menara Jam Atkinson (1905)
+        </button>
+        <button onclick="focusHotspot(1)" class="px-3 py-1.5 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-900 border border-sky-400 text-xs font-bold transition">
+          2. Pejabat Pos Lama Jesselton (1918)
+        </button>
+        <button onclick="focusHotspot(2)" class="px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-400 text-xs font-bold transition">
+          3. Tugu Perang Petagas (1946)
+        </button>
+        <button onclick="focusHotspot(3)" class="px-3 py-1.5 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-900 border border-orange-400 text-xs font-bold transition">
+          4. Rumah Tradisional & Gong Sabah
+        </button>
+      </div>
+
+      <!-- Kanvas 3D Ruang Legar Muzium + Butang Kecil Maklumat di Sekitar Warisan -->
+      <div class="relative rounded-3xl overflow-hidden border-4 border-heritage-gold shadow-2xl bg-slate-950">
+        <div id="panorama-container" class="w-full h-[460px] sm:h-[540px] cursor-grab active:cursor-grabbing"></div>
+
+        <!-- Lapisan Butang Kecil Interaktif di Sekitar Semua Tapak Warisan -->
+        <div id="vr-floating-pins" class="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+          <!-- 1. Butang Emas: Menara Jam Atkinson -->
+          <button id="pin-roof" onclick="selectTowerPin('roof')" onmouseenter="selectTowerPin('roof')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-amber-500/95 hover:bg-amber-400 text-heritage-navy font-extrabold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-circle-info"></i> Bumbung Terakota
+          </button>
+          <button id="pin-clock" onclick="selectTowerPin('clock')" onmouseenter="selectTowerPin('clock')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-amber-500/95 hover:bg-amber-400 text-heritage-navy font-extrabold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-clock"></i> Muka Jam 1905
+          </button>
+          <button id="pin-louvers" onclick="selectTowerPin('louvers')" onmouseenter="selectTowerPin('louvers')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-amber-500/95 hover:bg-amber-400 text-heritage-navy font-extrabold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-wind"></i> Bilah Pengudaraan
+          </button>
+          <button id="pin-wood" onclick="selectTowerPin('wood')" onmouseenter="selectTowerPin('wood')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-amber-500/95 hover:bg-amber-400 text-heritage-navy font-extrabold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-tree"></i> Kayu Merbau Asal
+          </button>
+          <button id="pin-base" onclick="selectTowerPin('base')" onmouseenter="selectTowerPin('base')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-amber-500/95 hover:bg-amber-400 text-heritage-navy font-extrabold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-shield"></i> Tapak & Pagar
+          </button>
+
+          <!-- 2. Butang Biru: Pejabat Pos Lama Jesselton 1918 -->
+          <button id="pin-po_roof" onclick="selectTowerPin('po_roof')" onmouseenter="selectTowerPin('po_roof')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-sky-600/95 hover:bg-sky-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-landmark"></i> Genting 1918
+          </button>
+          <button id="pin-po_pillars" onclick="selectTowerPin('po_pillars')" onmouseenter="selectTowerPin('po_pillars')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-sky-600/95 hover:bg-sky-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-columns"></i> Tiang Klasik
+          </button>
+          <button id="pin-po_history" onclick="selectTowerPin('po_history')" onmouseenter="selectTowerPin('po_history')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-sky-600/95 hover:bg-sky-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-envelope-open-text"></i> Sejarah Pejabat Pos
+          </button>
+
+          <!-- 3. Butang Hijau: Tugu Peringatan Perang Petagas 1946 -->
+          <button id="pin-petagas_spire" onclick="selectTowerPin('petagas_spire')" onmouseenter="selectTowerPin('petagas_spire')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-monument"></i> Puncak Obelisk
+          </button>
+          <button id="pin-petagas_plaque" onclick="selectTowerPin('petagas_plaque')" onmouseenter="selectTowerPin('petagas_plaque')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-scroll"></i> Plak 324 Wira
+          </button>
+          <button id="pin-petagas_date" onclick="selectTowerPin('petagas_date')" onmouseenter="selectTowerPin('petagas_date')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-calendar-day"></i> Tragedi 21 Jan 1944
+          </button>
+
+          <!-- 4. Butang Jingga: Rumah Tradisional & Gong Sabah -->
+          <button id="pin-house_roof" onclick="selectTowerPin('house_roof')" onmouseenter="selectTowerPin('house_roof')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-orange-600/95 hover:bg-orange-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-house"></i> Atap Rumbia & Bambu
+          </button>
+          <button id="pin-house_stilts" onclick="selectTowerPin('house_stilts')" onmouseenter="selectTowerPin('house_stilts')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-orange-600/95 hover:bg-orange-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-archway"></i> Tiang Tinggi
+          </button>
+          <button id="pin-sabah_gong" onclick="selectTowerPin('sabah_gong')" onmouseenter="selectTowerPin('sabah_gong')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-orange-600/95 hover:bg-orange-500 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-drum"></i> Gong Tembaga Sabah
+          </button>
+
+          <!-- 5. Butang Ungu: Seni Bina Muzium -->
+          <button id="pin-museum_stairs" onclick="selectTowerPin('museum_stairs')" onmouseenter="selectTowerPin('museum_stairs')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-purple-700/95 hover:bg-purple-600 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-stairs"></i> Balkoni Ukiran
+          </button>
+          <button id="pin-museum_tiles" onclick="selectTowerPin('museum_tiles')" onmouseenter="selectTowerPin('museum_tiles')" style="display:none;" class="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-purple-700/95 hover:bg-purple-600 text-white font-bold text-[11px] shadow-lg border border-white flex items-center gap-1 transition">
+            <i class="fa-solid fa-border-all"></i> Jubin Klasik
+          </button>
+        </div>
+
+        <!-- Pad Kawalan Pergerakan Sentuhan (Atas Kanan) -->
+        <div class="absolute top-3 right-3 z-20 bg-heritage-navy/85 backdrop-blur-md p-2 rounded-2xl border border-heritage-gold/40 text-white text-xs select-none">
+          <p class="text-[10px] text-center text-heritage-gold font-bold mb-1">Gerak (WASD)</p>
+          <div class="grid grid-cols-3 gap-1 w-24 text-center">
+            <div></div>
+            <button onpointerdown="setVRMove('forward', true)" onpointerup="setVRMove('forward', false)" onpointerleave="setVRMove('forward', false)" class="p-1.5 rounded bg-white/15 hover:bg-heritage-gold hover:text-heritage-navy"><i class="fa-solid fa-arrow-up"></i></button>
+            <div></div>
+            <button onpointerdown="setVRMove('left', true)" onpointerup="setVRMove('left', false)" onpointerleave="setVRMove('left', false)" class="p-1.5 rounded bg-white/15 hover:bg-heritage-gold hover:text-heritage-navy"><i class="fa-solid fa-arrow-left"></i></button>
+            <button onpointerdown="setVRMove('backward', true)" onpointerup="setVRMove('backward', false)" onpointerleave="setVRMove('backward', false)" class="p-1.5 rounded bg-white/15 hover:bg-heritage-gold hover:text-heritage-navy"><i class="fa-solid fa-arrow-down"></i></button>
+            <button onpointerdown="setVRMove('right', true)" onpointerup="setVRMove('right', false)" onpointerleave="setVRMove('right', false)" class="p-1.5 rounded bg-white/15 hover:bg-heritage-gold hover:text-heritage-navy"><i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+        </div>
+
+        <!-- Panel Paparan Maklumat Titik Panas (Bawah Kanvas) -->
+        <div class="absolute bottom-3 inset-x-3 z-20 bg-heritage-navy/95 backdrop-blur-md text-white p-4 rounded-2xl border border-heritage-gold/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <span class="text-[10px] uppercase tracking-wider font-bold text-heritage-gold">Panel Maklumat Warisan • Klik atau Sentuh Butang di Sekitar Monumen</span>
+            <h3 id="hotspot-title" class="font-bold text-base sm:text-lg text-white">Dewan Utama Warisan Sejarah Sabah</h3>
+            <p id="hotspot-desc" class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+              Seret skrin untuk memandang 360°, gunakan kekunci W A S D untuk berjalan menghampiri setiap tapak warisan, dan tekan butang kecil di sekitar monumen untuk membaca maklumat sejarahnya.
+            </p>
+          </div>
+          <button onclick="playCurrentHotspotAudio()" class="shrink-0 px-4 py-2.5 rounded-xl bg-heritage-gold hover:bg-yellow-500 text-heritage-navy font-bold text-xs flex items-center gap-2 shadow">
+            <i class="fa-solid fa-volume-high"></i> Baca Info
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- HALAMAN 4: PENEROKAAN MODEL 3D INTERAKTIF                  -->
+    <!-- ========================================================== -->
+    <section id="page-model3d" class="page-section hidden space-y-6">
+      <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-heritage-wood">Seni Bina & Struktur Kayu 1905</span>
+          <h2 class="font-heritage text-2xl sm:text-3xl font-bold text-heritage-navy">Penerokaan Model 3D Menara Jam Atkinson</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-autorotate" onclick="toggleAutoRotate3D()" class="px-4 py-2 rounded-xl bg-heritage-navy text-heritage-gold text-xs font-bold">
+            <i class="fa-solid fa-sync fa-spin"></i> Putaran Auto: ON
+          </button>
+          <button onclick="resetCamera3D()" class="px-4 py-2 rounded-xl bg-white border border-slate-300 text-heritage-navy text-xs font-bold hover:bg-slate-100">
+            <i class="fa-solid fa-compress"></i> Tetap Semula Pandangan
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <!-- Kanvas Three.js 3D -->
+        <div class="lg:col-span-7 bg-gradient-to-b from-sky-100 to-emerald-50 rounded-3xl border-2 border-heritage-gold shadow-xl overflow-hidden relative">
+          <div id="threejs-tower-container" class="w-full h-[430px] cursor-grab active:cursor-grabbing"></div>
+          <span class="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-heritage-navy/85 text-white text-[11px] font-medium">
+            <i class="fa-solid fa-hand-pointer text-heritage-gold"></i> Seret untuk memusing • Tatal (Scroll) untuk zum
+          </span>
+        </div>
+
+        <!-- Label Interaktif Bahagian Struktur -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200 space-y-2">
+            <span class="text-xs font-bold text-heritage-wood uppercase">Label Seni Bina Interaktif</span>
+            <h3 id="part3d-title" class="font-bold text-lg text-heritage-navy">Pilih Bahagian Struktur Menara</h3>
+            <p id="part3d-desc" class="text-sm text-slate-600 leading-relaxed">
+              Klik pada butang bahagian di bawah untuk memfokuskan kamera 3D serta memahami kejuruteraan kayu tradisional Menara Jam Atkinson.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button onclick="inspectPart3D('roof')" class="p-3.5 rounded-2xl bg-white hover:bg-heritage-cream border-2 border-heritage-wood/30 hover:border-heritage-gold text-left transition shadow-sm">
+              <span class="text-xs font-bold text-heritage-wood block">Bahagian 01</span>
+              <span class="font-bold text-sm text-heritage-navy">Bumbung Piramid Terakota</span>
+            </button>
+            <button onclick="inspectPart3D('clock')" class="p-3.5 rounded-2xl bg-white hover:bg-heritage-cream border-2 border-heritage-wood/30 hover:border-heritage-gold text-left transition shadow-sm">
+              <span class="text-xs font-bold text-heritage-wood block">Bahagian 02</span>
+              <span class="font-bold text-sm text-heritage-navy">Muka Jam & Gerbang Hiasan</span>
+            </button>
+            <button onclick="inspectPart3D('body')" class="p-3.5 rounded-2xl bg-white hover:bg-heritage-cream border-2 border-heritage-wood/30 hover:border-heritage-gold text-left transition shadow-sm">
+              <span class="text-xs font-bold text-heritage-wood block">Bahagian 03</span>
+              <span class="font-bold text-sm text-heritage-navy">Badan Kayu & Bilah Udara</span>
+            </button>
+            <button onclick="inspectPart3D('base')" class="p-3.5 rounded-2xl bg-white hover:bg-heritage-cream border-2 border-heritage-wood/30 hover:border-heritage-gold text-left transition shadow-sm">
+              <span class="text-xs font-bold text-heritage-wood block">Bahagian 04</span>
+              <span class="font-bold text-sm text-heritage-navy">Tapak & Pagar Besi Putih</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- HALAMAN 5: GARIS MASA WARISAN SEJARAH SABAH (1902 - KINI)  -->
+    <!-- ========================================================== -->
+    <section id="page-timeline" class="page-section hidden space-y-8">
+      <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-heritage-wood">Kronologi Peristiwa Penting</span>
+          <h2 class="font-heritage text-2xl sm:text-3xl font-bold text-heritage-navy">Garis Masa Warisan Sejarah Sabah (1902 – Masa Kini)</h2>
+        </div>
+        <button onclick="playNarration('timeline')" class="px-4 py-2 rounded-xl bg-heritage-navy text-white text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-volume-high text-heritage-gold"></i> Dengar Garis Masa
+        </button>
+      </div>
+
+      <div class="relative border-l-4 border-heritage-gold ml-4 sm:ml-8 space-y-8 py-2">
+        <div class="relative pl-8">
+          <span class="absolute -left-3.5 top-1 w-6 h-6 rounded-full bg-heritage-navy border-4 border-heritage-gold"></span>
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200">
+            <span class="text-xs font-extrabold text-heritage-wood">1902 • Era Awal Jesselton</span>
+            <h3 class="font-bold text-lg text-heritage-navy">Pemergian Francis George Atkinson</h3>
+            <p class="text-sm text-slate-600 mt-1">Pegawai Daerah pertama Jesselton meninggal dunia akibat demam malaria pada usia 28 tahun. Ibunya, Mary Edith Atkinson, menghadiahkan jam menara sebagai tanda ingatan.</p>
+          </div>
+        </div>
+
+        <div class="relative pl-8">
+          <span class="absolute -left-3.5 top-1 w-6 h-6 rounded-full bg-heritage-navy border-4 border-heritage-gold"></span>
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200">
+            <span class="text-xs font-extrabold text-heritage-wood">1905 • Seni Bina Kayu Merbau</span>
+            <h3 class="font-bold text-lg text-heritage-navy">Pembinaan Menara Jam Atkinson</h3>
+            <p class="text-sm text-slate-600 mt-1">Siap dibina di lereng Bukit Signal tanpa menggunakan paku besi dan mula beroperasi sebagai panduan waktu kapal di pelabuhan Jesselton.</p>
+          </div>
+        </div>
+
+        <div class="relative pl-8">
+          <span class="absolute -left-3.5 top-1 w-6 h-6 rounded-full bg-heritage-navy border-4 border-heritage-gold"></span>
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200">
+            <span class="text-xs font-extrabold text-heritage-wood">1918 • Pentadbiran Kolonial</span>
+            <h3 class="font-bold text-lg text-heritage-navy">Pembinaan Bangunan Pejabat Pos Lama Jesselton</h3>
+            <p class="text-sm text-slate-600 mt-1">Didirikan di Jalan Gaya untuk menempatkan Perbendaharaan, Audit dan Pejabat Pos utama Borneo Utara.</p>
+          </div>
+        </div>
+
+        <div class="relative pl-8">
+          <span class="absolute -left-3.5 top-1 w-6 h-6 rounded-full bg-heritage-navy border-4 border-heritage-gold"></span>
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200">
+            <span class="text-xs font-extrabold text-heritage-wood">1944 – 1946 • Perang Dunia Kedua & Petagas</span>
+            <h3 class="font-bold text-lg text-heritage-navy">Pengorbanan Gerila Kinabalu & Kelangsungan Monumen</h3>
+            <p class="text-sm text-slate-600 mt-1">324 pejuang Gerila Kinabalu gugur di Petagas pada 21 Januari 1944 dan diabadikan melalui Tugu Peringatan Perang Petagas (1946). Menara Jam Atkinson dan Pejabat Pos Lama turut terselamat daripada pengeboman 1945.</p>
+          </div>
+        </div>
+
+        <div class="relative pl-8">
+          <span class="absolute -left-3.5 top-1 w-6 h-6 rounded-full bg-heritage-gold border-4 border-heritage-navy"></span>
+          <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200">
+            <span class="text-xs font-extrabold text-heritage-wood">1963 – Masa Kini • Pemeliharaan Digital</span>
+            <h3 class="font-bold text-lg text-heritage-navy">Pewartaan Warisan Negeri Sabah & Inovasi WARISAN360 VR</h3>
+            <p class="text-sm text-slate-600 mt-1">Jesselton dinamakan semula sebagai Kota Kinabalu (1967), dan monumen-monumen ini diwartakan sebagai tapak warisan sejarah untuk pendidikan generasi masa hadapan.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- HALAMAN 6: KHAZANAH BUDAYA & WARISAN ETNIK SABAH           -->
+    <!-- ========================================================== -->
+    <section id="page-biography" class="page-section hidden space-y-8">
+      <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-heritage-wood">Identiti & Kepelbagaian Masyarakat Sabah</span>
+          <h2 class="font-heritage text-2xl sm:text-3xl font-bold text-heritage-navy">Khazanah Budaya, Seni Bina & Pahlawan Sabah</h2>
+        </div>
+        <button onclick="playNarration('biography')" class="px-4 py-2 rounded-xl bg-heritage-navy text-white text-xs font-bold flex items-center gap-2">
+          <i class="fa-solid fa-volume-high text-heritage-gold"></i> Dengar Naratif Budaya
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- Kad Profil Warisan Etnik & Perjuangan -->
+        <div class="lg:col-span-4 bg-heritage-navy text-white p-6 rounded-3xl shadow-xl border border-heritage-gold/40 text-center space-y-4">
+          <div class="w-32 h-32 mx-auto rounded-full bg-heritage-wood border-4 border-heritage-gold flex items-center justify-center shadow-inner">
+            <i class="fa-solid fa-house-chimney-window text-5xl text-heritage-goldLight"></i>
+          </div>
+          <div>
+            <h3 class="font-heritage text-xl font-bold text-heritage-gold">Warisan Peribumi & Pahlawan</h3>
+            <p class="text-xs text-slate-300 mt-1">Keharmonian Lebih 30 Kumpulan Etnik di Negeri di Bawah Bayu</p>
+          </div>
+          <div class="text-left text-xs space-y-2 bg-white/5 p-4 rounded-2xl border border-white/10">
+            <p><strong class="text-heritage-gold">Seni Bina Tradisional:</strong> Rumah panjang Rungus, rumah bertiang tinggi Murut & Kadazandusun berasaskan buluh serta kayu belian.</p>
+            <p><strong class="text-heritage-gold">Warisan Muzik Gong:</strong> Paluan gong tembaga & sompoton dalam sambutan Pesta Kaamatan serta adat istiadat.</p>
+            <p><strong class="text-heritage-gold">Semangat Kepahlawanan:</strong> Kebangkitan Mat Salleh, Antanom serta 324 wira Gerila Kinabalu di Petagas mempertahankan kedaulatan Sabah.</p>
+          </div>
+        </div>
+
+        <!-- Naratif Mendalam & Kepentingan kepada Masyarakat Sabah -->
+        <div class="lg:col-span-8 bg-white p-6 sm:p-8 rounded-3xl shadow-md border border-slate-200 space-y-5 leading-relaxed text-slate-700">
+          <h3 class="font-bold text-xl text-heritage-navy">Keunikan Seni Bina Rumah Tradisional & Warisan Budaya Sabah</h3>
+          <p>
+            Selain monumen bersejarah di bandar seperti <strong>Menara Jam Atkinson (1905)</strong> dan <strong>Pejabat Pos Lama Jesselton (1918)</strong>, kekayaan sebenar warisan Sabah terpancar melalui kebijaksanaan masyarakat peribuminya membina rumah tradisional serta memelihara adat resam turun-temurun.
+          </p>
+          <p>
+            Rumah tradisional masyarakat Kadazandusun, Rungus dan Murut dibina menggunakan bahan semula jadi tempatan seperti <strong>kayu belian, buluh beranyam dan atap daun rumbia</strong>. Reka bentuk bertiang tinggi dan bumbung curam bukan sahaja melindungi penghuni daripada banjir serta haiwan liar, malah menghasilkan pengudaraan semula jadi yang nyaman.
+          </p>
+          <div class="p-5 rounded-2xl bg-heritage-cream border-l-4 border-heritage-gold">
+            <h4 class="font-bold text-heritage-navy mb-1">Kepentingan Pemeliharaan Kepada Generasi Muda Sabah</h4>
+            <p class="text-sm">
+              1. <strong>Perpaduan & Keharmonian Kaum:</strong> Memupuk rasa hormat terhadap kepelbagaian budaya, tarian Sumazau, Magunatip dan paluan gong di Sabah.<br>
+              2. <strong>Kearifan Tempatan & Patriotisme:</strong> Menghargai ilmu pertukangan tradisional serta semangat juang pahlawan Sabah yang mempertahankan tanah air.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- HALAMAN 7: MISI & PERMAINAN KUIZ SASARAN MEDIAPIPE HANDS   -->
+    <!-- ========================================================== -->
+    <section id="page-quiz" class="page-section hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-heritage-wood">Gamifikasi Interaktif • Google MediaPipe Hands</span>
+          <h2 class="font-heritage text-2xl sm:text-3xl font-bold text-heritage-navy">Misi & Kuiz Sasaran Interaktif (Warisan Sabah & Kata Nama Am Aras 4)</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1.5 rounded-xl bg-heritage-navy text-heritage-gold text-xs font-bold">
+            <i class="fa-solid fa-hand-sparkles"></i> Kawalan: Hujung Jari Telunjuk + Isyarat Pinch/Genggam (Atau Tetikus/Sentuh)
+          </span>
+        </div>
+      </div>
+
+      <!-- Kontena Permainan Arked Moden -->
+      <div id="ar-game-wrapper" class="relative rounded-3xl overflow-hidden bg-slate-950 border-4 border-heritage-gold shadow-2xl min-h-[560px] flex flex-col">
+        
+        <!-- HUD Atas Permainan (Skor, Kombo, Pemasa 60 Saat, Pilihan Topik) -->
+        <div class="relative z-20 bg-heritage-navy/95 backdrop-blur-md text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-heritage-gold/40">
+          <div class="flex items-center gap-3">
+            <div class="bg-heritage-wood px-3 py-1.5 rounded-xl border border-heritage-gold/50">
+              <span class="text-[10px] uppercase text-heritage-gold block">Skor</span>
+              <span id="game-score" class="font-extrabold text-lg">0</span>
+            </div>
+            <div class="bg-indigo-950 px-3 py-1.5 rounded-xl border border-indigo-400/40">
+              <span class="text-[10px] uppercase text-indigo-300 block">Kombo</span>
+              <span id="game-combo" class="font-extrabold text-lg text-amber-400">x1</span>
+            </div>
+            <div class="bg-slate-900 px-3 py-1.5 rounded-xl border border-white/20">
+              <span class="text-[10px] uppercase text-slate-400 block">Soalan</span>
+              <span id="game-q-num" class="font-extrabold text-lg">1/8</span>
+            </div>
+          </div>
+
+          <!-- Paparan Soalan Semasa -->
+          <div id="game-question-box" class="flex-grow max-w-xl bg-white/10 px-4 py-2 rounded-2xl border border-heritage-gold/60 text-center">
+            <span id="game-topic-tag" class="text-[10px] font-bold uppercase tracking-wider bg-heritage-gold text-heritage-navy px-2 py-0.5 rounded-full">
+              Warisan Sejarah Sabah & Kata Nama Am Aras 4
+            </span>
+            <p id="game-question-text" class="font-bold text-sm sm:text-base text-white mt-1">
+              Tekan "Mula Permainan" di bawah untuk memulakan misi kuiz sasaran!
+            </p>
+          </div>
+
+          <!-- Pemasa Undur 60 Saat -->
+          <div class="bg-red-950/90 px-4 py-1.5 rounded-xl border border-red-500/50 text-center min-w-[85px]">
+            <span class="text-[10px] uppercase text-red-300 block">Masa</span>
+            <span id="game-timer" class="font-extrabold text-xl text-white">60s</span>
+          </div>
+        </div>
+
+        <!-- Kawasan Kanvas Permainan + Latar Belakang Webcam MediaPipe -->
+        <div class="relative flex-grow w-full h-[460px] sm:h-[500px] overflow-hidden select-none">
+          <!-- Video Webcam Tersembunyi untuk MediaPipe -->
+          <video id="webcam-video" class="hidden" playsinline></video>
+          
+          <!-- Kanvas Utama Permainan (Webcam + Landmarks + Belon Sasaran + Zarah Letupan) -->
+          <canvas id="ar-game-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+          <!-- Status Penjejakan Tangan -->
+          <div id="hand-status-badge" class="absolute bottom-3 left-3 z-20 px-3 py-1.5 rounded-full bg-black/70 text-xs text-white border border-white/20 flex items-center gap-2">
+            <span id="hand-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span id="hand-status-text">Mod Sedia (Kamera / Tetikus Disokong)</span>
+          </div>
+
+          <!-- SKRIN MENU MULA BERSERTA PANDUAN ISYARAT -->
+          <div id="game-start-overlay" class="absolute inset-0 z-30 bg-heritage-navy/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <div class="max-w-2xl w-full bg-slate-900 border-2 border-heritage-gold rounded-3xl p-6 sm:p-8 text-white shadow-2xl space-y-5">
+              <div class="text-center space-y-2">
+                <span class="px-3 py-1 rounded-full bg-heritage-gold/20 text-heritage-gold text-xs font-bold border border-heritage-gold">
+                  ARKED WARISAN & BAHASA MELAYU ARAS 4
+                </span>
+                <h3 class="font-heritage text-2xl sm:text-3xl font-extrabold text-white">MISI PECAH BELON WARISAN SABAH</h3>
+                <p class="text-xs sm:text-sm text-slate-300">
+                  Jawab soalan gabungan <strong>Warisan Sejarah Sabah</strong> & <strong>Kata Nama Am (Aras 4)</strong> dalam masa 60 saat!
+                </p>
+              </div>
+
+              <!-- Panduan Isyarat Tangan MediaPipe -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-xs">
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-1.5">
+                  <div class="text-2xl text-heritage-gold"><i class="fa-solid fa-hand-point-up"></i></div>
+                  <h4 class="font-bold text-white">1. Arah Sasaran</h4>
+                  <p class="text-slate-300">Gerakkan <strong>hujung jari telunjuk</strong> anda di hadapan kamera untuk mengawal penunjuk sasaran.</p>
+                </div>
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-1.5">
+                  <div class="text-2xl text-emerald-400"><i class="fa-solid fa-hand-fist"></i></div>
+                  <h4 class="font-bold text-white">2. Isyarat Pinch / Genggam</h4>
+                  <p class="text-slate-300">Rapatkan ibu jari & telunjuk (<strong>Pinch</strong>) atau <strong>genggam tangan</strong> untuk memecahkan belon jawapan betul!</p>
+                </div>
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-1.5">
+                  <div class="text-2xl text-sky-400"><i class="fa-solid fa-computer-mouse"></i></div>
+                  <h4 class="font-bold text-white">3. Sandaran Tetikus/Sentuh</h4>
+                  <p class="text-slate-300">Tiada kamera? Anda juga boleh klik atau sentuh terus belon jawapan pada skrin.</p>
+                </div>
+              </div>
+
+              <!-- Pilihan Tema Soalan -->
+              <div class="flex flex-wrap items-center justify-center gap-2">
+                <label class="text-xs font-bold text-heritage-gold">Pilih Fokus Soalan:</label>
+                <select id="quiz-mode-select" class="bg-heritage-navy border border-heritage-gold text-white text-xs rounded-xl px-3 py-2 font-semibold">
+                  <option value="mixed">Gabungan: Warisan Sejarah Sabah + Kata Nama Am Aras 4</option>
+                  <option value="history">Khusus: Sejarah Tapak Warisan Sabah</option>
+                  <option value="katana">Khusus: Kata Nama Am (Aras 4 - Konteks Warisan)</option>
+                </select>
+              </div>
+
+              <div class="flex flex-wrap justify-center gap-3 pt-2">
+                <button onclick="startARGame(true)" class="px-6 py-3.5 rounded-2xl bg-heritage-gold hover:bg-yellow-500 text-heritage-navy font-extrabold text-sm shadow-lg transition flex items-center gap-2">
+                  <i class="fa-solid fa-camera"></i> Mula Dengan Kamera (MediaPipe Hands)
+                </button>
+                <button onclick="startARGame(false)" class="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/30 transition flex items-center gap-2">
+                  <i class="fa-solid fa-play"></i> Mula Mod Tetikus / Sentuh
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SKRIN KEPUTUSAN & ANALISIS JAWAPAN -->
+          <div id="game-result-overlay" class="hidden absolute inset-0 z-30 bg-heritage-navy/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <div class="max-w-3xl w-full bg-slate-900 border-2 border-heritage-gold rounded-3xl p-6 text-white shadow-2xl space-y-5 max-h-[90%] overflow-y-auto">
+              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/15 pb-4">
+                <div>
+                  <span class="text-xs font-bold text-heritage-gold uppercase">Misi Selesai!</span>
+                  <h3 class="font-heritage text-2xl font-extrabold">Keputusan & Analisis Jawapan</h3>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-center bg-white/10 px-4 py-2 rounded-2xl">
+                    <span class="text-[10px] text-slate-300 block">SKOR AKHIR</span>
+                    <span id="result-final-score" class="text-2xl font-extrabold text-heritage-gold">0</span>
+                  </div>
+                  <div class="text-center bg-white/10 px-4 py-2 rounded-2xl">
+                    <span class="text-[10px] text-slate-300 block">KETEPATAN</span>
+                    <span id="result-accuracy" class="text-2xl font-extrabold text-emerald-400">0%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Senarai Analisis Jawapan -->
+              <div id="result-analysis-list" class="space-y-2.5 text-xs sm:text-sm max-h-56 overflow-y-auto pr-2">
+                <!-- Diisi secara dinamik -->
+              </div>
+
+              <div class="flex flex-wrap justify-between items-center gap-3 pt-2 border-t border-white/15">
+                <button onclick="startARGame(useCameraMode)" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-2">
+                  <i class="fa-solid fa-rotate-right"></i> Main Semula
+                </button>
+                <button onclick="navigateTo('certificate')" class="px-6 py-3 rounded-xl bg-heritage-gold hover:bg-yellow-500 text-heritage-navy font-extrabold text-xs sm:text-sm shadow-lg flex items-center gap-2">
+                  <i class="fa-solid fa-award"></i> Tuntut Sijil Digital WARISAN360 VR
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- HALAMAN 8: PENCAPAIAN & SIJIL DIGITAL                      -->
+    <!-- ========================================================== -->
+    <section id="page-certificate" class="page-section hidden space-y-8">
+      <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-heritage-wood">Pengiktirafan Eksplorasi Maya</span>
+          <h2 class="font-heritage text-2xl sm:text-3xl font-bold text-heritage-navy">Pencapaian & Sijil Digital WARISAN360 VR</h2>
+        </div>
+        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-heritage-navy text-heritage-gold font-bold text-xs sm:text-sm shadow hover:bg-heritage-wood transition flex items-center gap-2">
+          <i class="fa-solid fa-print"></i> Cetak / Simpan PDF Sijil
+        </button>
+      </div>
+
+      <!-- Borang Nama Penerima Sijil -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center gap-4">
+        <label for="cert-name-input" class="font-bold text-sm text-heritage-navy whitespace-nowrap">
+          <i class="fa-solid fa-pen-nib text-heritage-wood"></i> Masukkan Nama Penuh Anda:
+        </label>
+        <input type="text" id="cert-name-input" placeholder="Contoh: Ahmad Daniel Bin Zulkifli" oninput="updateCertificateName(this.value)" class="w-full sm:w-96 px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-heritage-wood text-sm font-semibold">
+        <span class="text-xs text-slate-500">Nama akan dikemas kini secara automatik pada sijil di bawah.</span>
+      </div>
+
+      <!-- Paparan Sijil Digital Rasmi -->
+      <div id="printable-certificate" class="max-w-4xl mx-auto bg-heritage-cream p-4 sm:p-8 rounded-3xl shadow-2xl border-8 border-double border-heritage-gold relative overflow-hidden">
+        <div class="border-2 border-heritage-wood p-6 sm:p-10 rounded-2xl text-center space-y-6 relative bg-white/90">
+          <!-- Lencana Atas -->
+          <div class="flex justify-center">
+            <div class="w-16 h-16 rounded-full bg-heritage-navy text-heritage-gold flex items-center justify-center text-3xl border-4 border-heritage-gold shadow-lg">
+              <i class="fa-solid fa-landmark"></i>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <p class="text-xs font-bold tracking-[0.25em] text-heritage-wood uppercase">Inovasi Pendidikan Digital Warisan Sabah</p>
+            <h3 class="font-heritage text-2xl sm:text-4xl font-extrabold text-heritage-navy">SIJIL PENGHARGAAN</h3>
+            <p class="text-xs sm:text-sm text-slate-500 font-medium">WARISAN360 VR: JEJAK WARISAN SEJARAH SABAH</p>
+          </div>
+
+          <div class="py-2">
+            <p class="text-sm text-slate-600">Dengan sukacitanya diperakui bahawa</p>
+            <h4 id="cert-display-name" class="font-heritage text-2xl sm:text-3xl font-bold text-heritage-wood border-b-2 border-heritage-gold inline-block px-8 py-2 mt-2">
+              PENJELAJAH WARISAN SABAH
+            </h4>
+          </div>
+
+          <p class="text-xs sm:text-sm text-slate-700 max-w-2xl mx-auto leading-relaxed">
+            telah berjaya menelusuri khazanah <strong>Warisan Sejarah Sabah</strong> (Menara Jam Atkinson, Pejabat Pos Lama Jesselton, Tugu Peringatan Perang Petagas & Budaya Etnik Sabah) melalui Realiti Maya 360°, penerokaan model 3D, serta menyempurnakan <strong>Misi Kuiz Interaktif</strong> dengan skor <strong id="cert-score-badge" class="text-heritage-navy">0 Mata</strong>.
+          </p>
+
+          <!-- Lencana Ganjaran Digital -->
+          <div class="flex flex-wrap justify-center gap-3 pt-2">
+            <span class="px-3 py-1 rounded-full bg-heritage-navy text-heritage-gold text-xs font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-vr-cardboard"></i> Penjelajah 360°
+            </span>
+            <span class="px-3 py-1 rounded-full bg-heritage-wood text-white text-xs font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-cubes"></i> Arkitek Warisan 3D
+            </span>
+            <span class="px-3 py-1 rounded-full bg-emerald-800 text-white text-xs font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-star"></i> Juara Kuiz Sejarah & Bahasa
+            </span>
+          </div>
+
+          <div class="pt-6 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 border-t border-slate-200 gap-4">
+            <div class="text-left">
+              <p class="font-bold text-heritage-navy">Tarikh Dijana:</p>
+              <p id="cert-date"></p>
+            </div>
+            <div class="text-center">
+              <div class="w-20 h-20 mx-auto rounded-full border-2 border-heritage-gold flex items-center justify-center text-heritage-gold font-heritage font-bold text-[10px] leading-tight p-2 rotate-12">
+                DISAHKAN<br>WARISAN360<br>1905 - 2026
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-heritage-navy">Kurator Digital Warisan</p>
+              <p>Kota Kinabalu, Sabah, Malaysia</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-heritage-navy text-slate-300 text-xs py-6 border-t border-heritage-gold/30 mt-12">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p>© 2026 <strong>WARISAN360 VR: Jejak Warisan Sejarah Sabah</strong>. Hak Cipta Terpelihara • Pemeliharaan Warisan Sejarah Sabah.</p>
+      <p class="text-heritage-gold">Mesra Murid • Warga Emas • Inklusif OKU (Sari Kata & Audio Dwibahasa)</p>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- SKRIP UTAMA: NAVIGASI, AUDIO, 3D THREE.JS, 360° & MEDIAPIPE HANDS     -->
+  <!-- ===================================================================== -->
+  <script>
+    // 1. PENGURUSAN HALAMAN & KEMAJUAN PEMBELAJARAN
+    const visitedPages = new Set(['home']);
+
+    function navigateTo(pageId) {
+      document.querySelectorAll('.page-section').forEach(sec => sec.classList.add('hidden'));
+      const target = document.getElementById(`page-${pageId}`);
+      if (target) target.classList.remove('hidden');
+
+      // Kemas kini butang navigasi aktif
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.nav === pageId) {
+          btn.classList.add('bg-heritage-gold', 'text-heritage-navy', 'font-bold');
+          btn.classList.remove('hover:bg-white/10');
+        } else {
+          btn.classList.remove('bg-heritage-gold', 'text-heritage-navy', 'font-bold');
+          btn.classList.add('hover:bg-white/10');
+        }
+      });
+
+      visitedPages.add(pageId);
+      updateOverallProgress();
+
+      // Inisialisasi kanvas Three.js apabila halaman berkaitan dibuka
+      if (pageId === 'model3d') {
+        setTimeout(initModel3D, 100);
+      } else if (pageId === 'vr360') {
+        setTimeout(initPanorama360, 100);
+      } else if (pageId === 'quiz') {
+        setTimeout(resizeARCanvas, 100);
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateOverallProgress() {
+      const pct = Math.min(100, Math.round((visitedPages.size / 8) * 100));
+      const bar = document.getElementById('home-progress-bar');
+      const txt = document.getElementById('home-progress-text');
+      if (bar) bar.style.width = pct + '%';
+      if (txt) txt.textContent = pct + '%';
+    }
+
+    // 2. AKSES INKLUSIF: DWIBAHASA (BM / EN), SAIZ TEKS, KONTRAS & NARATIF AUDIO
+    let currentLang = 'ms';
+
+    const i18nData = {
+      ms: {
+        subtitle: "Jejak Warisan Sejarah Sabah",
+        heroBadge: "Inovasi Pendidikan Warisan Sabah",
+        heroDesc: "Menelusuri sejarah Negeri di Bawah Bayu tanpa sempadan. Terokai monumen ikonik Sabah seperti Menara Jam Atkinson (1905), Pejabat Pos Lama Jesselton (1918), Tugu Peringatan Perang Petagas (1946), dan Rumah Tradisional Etnik Sabah melalui lawatan maya 360°, model 3D, dan kuiz pengecaman isyarat tangan.",
+        btnStartVR: "Mula Lawatan Maya 360°",
+        btnExplore3D: "Terokai Model 3D",
+        btnListen: "Dengar Pengenalan",
+        stopAudio: "Henti Audio",
+        nav1: "1. Utama",
+        nav2: "2. Sejarah & Rekonstruksi",
+        nav3: "3. Lawatan Maya 360°",
+        nav4: "4. Model 3D",
+        nav5: "5. Garis Masa",
+        nav6: "6. Budaya & Etnik Sabah",
+        nav7: "7. Misi & Kuiz AR",
+        nav8: "8. Sijil Digital"
+      },
+      en: {
+        subtitle: "Sabah Historical Heritage Trail",
+        heroBadge: "Sabah Heritage Educational Innovation",
+        heroDesc: "Explore the history of the Land Below the Wind without borders. Discover Sabah's iconic monuments including Atkinson Clock Tower (1905), Old Jesselton Post Office (1918), Petagas War Memorial (1946), and Traditional Sabahan Houses via 360° virtual tours and gesture-controlled quizzes.",
+        btnStartVR: "Start 360° Virtual Tour",
+        btnExplore3D: "Explore 3D Model",
+        btnListen: "Listen to Intro",
+        stopAudio: "Stop Audio",
+        nav1: "1. Home",
+        nav2: "2. History & Reconstruction",
+        nav3: "3. 360° Virtual Tour",
+        nav4: "4. 3D Model",
+        nav5: "5. Timeline",
+        nav6: "6. Sabah Culture & Ethnic",
+        nav7: "7. AR Quiz Mission",
+        nav8: "8. Digital Certificate"
+      }
+    };
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'ms' ? 'en' : 'ms';
+      document.getElementById('lang-label').textContent = currentLang === 'ms' ? 'BM | EN' : 'EN | BM';
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (i18nData[currentLang][key]) {
+          el.textContent = i18nData[currentLang][key];
+        }
+      });
+    }
+
+    function toggleFontSize() {
+      document.body.classList.toggle('large-text');
+    }
+
+    function toggleContrast() {
+      document.body.classList.toggle('high-contrast');
+    }
+
+    // Naratif Audio Dwibahasa dengan Sari Kata
+    const narrationScripts = {
+      ms: {
+        home: "Selamat datang ke WARISAN 360 VR: Jejak Warisan Sejarah Sabah. Terokai pelbagai tapak bersejarah negeri Sabah termasuk Menara Jam Atkinson, Bangunan Pejabat Pos Lama Jesselton, Tugu Peringatan Perang Petagas dan Rumah Tradisional Etnik Sabah.",
+        intro: "Khazanah sejarah Sabah merangkumi Menara Jam Atkinson yang dibina pada tahun 1905, Bangunan Pejabat Pos Lama Jesselton tahun 1918, Tugu Peringatan Perang Petagas tahun 1946, serta warisan seni bina dan budaya etnik Sabah.",
+        vr360: "Anda kini berada di Galeri Utama Warisan Sejarah Sabah. Sila perhatikan papan nama di bawah setiap tapak pameran dan tekan butang kecil di sekitarnya untuk membaca maklumat sejarah.",
+        timeline: "Garis masa warisan Sabah bermula daripada pembinaan Menara Jam Atkinson pada tahun 1905, Pejabat Pos Lama pada tahun 1918, pengorbanan wira Petagas pada tahun 1944, pembentukan Malaysia pada tahun 1963 hingga pewartaan monumen bersejarah masa kini.",
+        biography: "Sabah kaya dengan warisan budaya lebih 30 kumpulan etnik, termasuk seni bina rumah tradisional bertiang tinggi, paluan gong tembaga, serta semangat kepahlawanan tokoh seperti Mat Salleh, Antanom dan pejuang Gerila Kinabalu."
+      },
+      en: {
+        home: "Welcome to WARISAN 360 VR: Sabah Historical Heritage Trail. Explore Sabah's historical landmarks including Atkinson Clock Tower, Old Jesselton Post Office, Petagas War Memorial, and Traditional Sabahan Houses.",
+        intro: "Sabah's historical treasures include the 1905 Atkinson Clock Tower, the 1918 Old Jesselton Post Office, the 1946 Petagas War Memorial, and indigenous architectural and cultural heritage.",
+        vr360: "You are now in the Sabah Historical Heritage Main Gallery. Check the nameplate plaques beneath each heritage exhibit and press the surrounding buttons for historical details.",
+        timeline: "The Sabah heritage timeline spans from the 1905 Atkinson Clock Tower, the 1918 Old Post Office, the 1944 Petagas heroes' sacrifice, the 1963 formation of Malaysia, to modern digital preservation.",
+        biography: "Sabah is rich in the cultural heritage of over 30 ethnic groups, including stilt traditional houses, bronze gong music, and heroic figures such as Mat Salleh, Antanom, and the Kinabalu Guerrilla fighters."
+      }
+    };
+
+    function playNarration(sectionKey) {
+      const text = narrationScripts[currentLang][sectionKey] || narrationScripts.ms.home;
+      const banner = document.getElementById('subtitle-banner');
+      const subText = document.getElementById('subtitle-text');
+      const stopBtn = document.getElementById('global-stop-audio');
+
+      subText.textContent = text;
+      banner.classList.remove('hidden');
+      stopBtn.classList.remove('hidden');
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = currentLang === 'ms' ? 'ms-MY' : 'en-US';
+        utterance.rate = 0.95;
+        utterance.onend = () => {
+          stopBtn.classList.add('hidden');
+        };
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function stopAudio() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      document.getElementById('subtitle-banner').classList.add('hidden');
+      document.getElementById('global-stop-audio').classList.add('hidden');
+    }
+
+    // 3. PELUNCUR PERBANDINGAN REKONSTRUKSI SEJARAH (HALAMAN 2)
+    function updateComparisonSlider(val) {
+      document.getElementById('reconstruction-overlay').style.width = val + '%';
+      document.getElementById('slider-divider').style.left = val + '%';
+    }
+
+    // 4. LAWATAN MAYA 360 DARJAH INTERAKTIF (HALAMAN 3 - RUANG LEGAR MUZIUM 3D ELEGAN & REALISTIK)
+    let vrInitialized = false;
+    let vrCamera, vrScene, vrRenderer;
+    let vrLon = 0, vrLat = -8, isVrDragging = false, vrStartX = 0, vrStartY = 0;
+    let vrPinAnchors = [];
+    let vrTargetPos = new THREE.Vector3(0, 4.2, 13.5);
+    let vrTargetLon = 0, vrTargetLat = -8, isAutoMovingVR = false;
+    const vrMoveKeys = { forward: false, backward: false, left: false, right: false };
+
+    function setVRMove(dir, state) {
+      vrMoveKeys[dir] = state;
+      if (state) isAutoMovingVR = false;
+    }
+
+    function initPanorama360() {
+      const container = document.getElementById('panorama-container');
+      if (!container || vrInitialized) return;
+      vrInitialized = true;
+
+      vrScene = new THREE.Scene();
+      vrScene.background = new THREE.Color(0x16120E);
+      vrScene.fog = new THREE.FogExp2(0x16120E, 0.012);
+
+      vrCamera = new THREE.PerspectiveCamera(65, container.clientWidth / container.clientHeight, 0.1, 200);
+      vrCamera.position.set(0, 4.2, 13.5);
+
+      vrRenderer = new THREE.WebGLRenderer({ antialias: true });
+      vrRenderer.setSize(container.clientWidth, container.clientHeight);
+      vrRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(vrRenderer.domElement);
+
+      // Pencahayaan Galeri Muzium Mewah (Ambient + Spotlights + Lampu Siling)
+      const ambientLight = new THREE.AmbientLight(0xFFF6E5, 0.6);
+      vrScene.add(ambientLight);
+
+      const atriumLight = new THREE.PointLight(0xFFE4B5, 1.1, 55);
+      atriumLight.position.set(0, 14, 2);
+      vrScene.add(atriumLight);
+
+      const spotlightTower = new THREE.SpotLight(0xFFFBEB, 1.5);
+      spotlightTower.position.set(0, 15, 7);
+      spotlightTower.angle = Math.PI / 4;
+      spotlightTower.penumbra = 0.5;
+      vrScene.add(spotlightTower);
+
+      // 1. Tekstur Lantai Jubin Marmar Motif Bunga Klasik Biru-Putih Resolusi Tinggi
+      const tileCanvas = document.createElement('canvas');
+      tileCanvas.width = 512;
+      tileCanvas.height = 512;
+      const tctx = tileCanvas.getContext('2d');
+      tctx.fillStyle = '#F8F7F2';
+      tctx.fillRect(0, 0, 512, 512);
+
+      for (let qx = 0; qx < 2; qx++) {
+        for (let qy = 0; qy < 2; qy++) {
+          const cx = qx * 256 + 128;
+          const cy = qy * 256 + 128;
+          tctx.strokeStyle = '#1E3A5F';
+          tctx.lineWidth = 4;
+          tctx.strokeRect(qx * 256 + 4, qy * 256 + 4, 248, 248);
+
+          for (let a = 0; a < 8; a++) {
+            tctx.save();
+            tctx.translate(cx, cy);
+            tctx.rotate((a * Math.PI) / 4);
+            tctx.fillStyle = a % 2 === 0 ? '#1E3A5F' : '#3B6E8C';
+            tctx.beginPath();
+            tctx.ellipse(0, -52, 16, 42, 0, 0, Math.PI * 2);
+            tctx.fill();
+            tctx.restore();
+          }
+          tctx.fillStyle = '#D4AF37';
+          tctx.beginPath();
+          tctx.arc(cx, cy, 16, 0, Math.PI * 2);
+          tctx.fill();
+        }
+      }
+      const floorTex = new THREE.CanvasTexture(tileCanvas);
+      floorTex.wrapS = THREE.RepeatWrapping;
+      floorTex.wrapT = THREE.RepeatWrapping;
+      floorTex.repeat.set(12, 12);
+
+      const floorMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(44, 44),
+        new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.25, metalness: 0.1 })
+      );
+      floorMesh.rotation.x = -Math.PI / 2;
+      vrScene.add(floorMesh);
+
+      // 2. Dinding & Siling Dewan Utama Muzium (Diperluas untuk 4 Zon Warisan Sabah)
+      const wallCreamMat = new THREE.MeshStandardMaterial({ color: 0xEFECE6, roughness: 0.7 });
+      const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x3A2010, roughness: 0.45, metalness: 0.1 });
+      const goldTrimMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, roughness: 0.3, metalness: 0.8 });
+      const marbleMat = new THREE.MeshStandardMaterial({ color: 0xF5F3EE, roughness: 0.2 });
+
+      const backWall = new THREE.Mesh(new THREE.BoxGeometry(44, 18, 0.5), wallCreamMat);
+      backWall.position.set(0, 9, -20);
+      vrScene.add(backWall);
+
+      const frontWall = new THREE.Mesh(new THREE.BoxGeometry(44, 18, 0.5), wallCreamMat);
+      frontWall.position.set(0, 9, 20);
+      vrScene.add(frontWall);
+
+      const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 18, 44), wallCreamMat);
+      leftWall.position.set(-20, 9, 0);
+      vrScene.add(leftWall);
+
+      const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 18, 44), wallCreamMat);
+      rightWall.position.set(20, 9, 0);
+      vrScene.add(rightWall);
+
+      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(44, 44), new THREE.MeshStandardMaterial({ color: 0xFAF8F5 }));
+      ceiling.rotation.x = Math.PI / 2;
+      ceiling.position.y = 17.5;
+      vrScene.add(ceiling);
+
+      // 3. Tingkap Kerawang Tinggi Bercahaya & Tangga Agam Simetri di Dinding Belakang
+      const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(7.2, 8.5, 0.3), darkWoodMat);
+      windowFrame.position.set(0, 11.2, -19.6);
+      vrScene.add(windowFrame);
+
+      const windowGlass = new THREE.Mesh(
+        new THREE.PlaneGeometry(6.6, 7.9),
+        new THREE.MeshBasicMaterial({ color: 0xFFFDF7 })
+      );
+      windowGlass.position.set(0, 11.2, -19.42);
+      vrScene.add(windowGlass);
+
+      for (let gx = -2.2; gx <= 2.2; gx += 2.2) {
+        const vBar = new THREE.Mesh(new THREE.BoxGeometry(0.14, 7.9, 0.1), darkWoodMat);
+        vBar.position.set(gx, 11.2, -19.38);
+        vrScene.add(vBar);
+      }
+      for (let gy = 8.2; gy <= 14.2; gy += 1.5) {
+        const hBar = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.14, 0.1), darkWoodMat);
+        hBar.position.set(0, gy, -19.38);
+        vrScene.add(hBar);
+      }
+
+      const stageBase = new THREE.Mesh(new THREE.BoxGeometry(16, 0.45, 5.5), new THREE.MeshStandardMaterial({ color: 0x2B547E, roughness: 0.3 }));
+      stageBase.position.set(0, 0.22, -16.8);
+      vrScene.add(stageBase);
+
+      for (let s = 0; s < 6; s++) {
+        const step = new THREE.Mesh(new THREE.BoxGeometry(4.2 - s * 0.15, 0.28, 3.2 - s * 0.38), marbleMat);
+        step.position.set(0, 0.55 + s * 0.28, -16.6 - s * 0.18);
+        vrScene.add(step);
+      }
+
+      [-13.5, 13.5].forEach(bx => {
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(11.5, 0.55, 7), marbleMat);
+        deck.position.set(bx, 5.2, -15.5);
+        vrScene.add(deck);
+
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(11.5, 1.15, 0.28), darkWoodMat);
+        rail.position.set(bx, 6.0, -12.1);
+        vrScene.add(rail);
+
+        const goldCap = new THREE.Mesh(new THREE.BoxGeometry(11.6, 0.1, 0.36), goldTrimMat);
+        goldCap.position.set(bx, 6.6, -12.1);
+        vrScene.add(goldCap);
+      });
+
+      // Fungsi pembantu membina pentas pameran bulat berlampu emas
+      function createExhibitionPlinth(x, z, radius = 3.2) {
+        const plinth = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius + 0.35, 0.35, 32), darkWoodMat);
+        plinth.position.set(x, 0.17, z);
+        vrScene.add(plinth);
+
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(radius + 0.18, 0.05, 12, 48), goldTrimMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.set(x, 0.36, z);
+        vrScene.add(ring);
+      }
+
+      // Fungsi membina Papan Nama Fizikal 3D di bahagian bawah/hadapan setiap tapak warisan
+      function createHeritageNameboard(titleText, subtitleText, x, z, rotY = 0) {
+        const boardGroup = new THREE.Group();
+
+        // Tiang penyokong kiri & kanan papan tanda
+        const postGeo = new THREE.CylinderGeometry(0.045, 0.055, 1.05, 12);
+        const leftPost = new THREE.Mesh(postGeo, darkWoodMat);
+        leftPost.position.set(-1.35, 0.52, 0);
+        const rightPost = new THREE.Mesh(postGeo, darkWoodMat);
+        rightPost.position.set(1.35, 0.52, 0);
+        boardGroup.add(leftPost, rightPost);
+
+        // Bingkai emas & kayu papan nama condong sedikit ke atas supaya mudah dibaca
+        const frameMesh = new THREE.Mesh(new THREE.BoxGeometry(3.15, 0.88, 0.12), goldTrimMat);
+        frameMesh.position.set(0, 1.05, 0);
+        frameMesh.rotation.x = -0.25;
+        boardGroup.add(frameMesh);
+
+        // Kanvas teks resolusi tinggi untuk papan nama
+        const bCanvas = document.createElement('canvas');
+        bCanvas.width = 1024;
+        bCanvas.height = 280;
+        const bCtx = bCanvas.getContext('2d');
+
+        bCtx.fillStyle = '#0F1E36';
+        bCtx.fillRect(0, 0, 1024, 280);
+
+        bCtx.strokeStyle = '#D4AF37';
+        bCtx.lineWidth = 12;
+        bCtx.strokeRect(14, 14, 996, 252);
+
+        bCtx.fillStyle = '#F3E5AB';
+        bCtx.font = 'bold 42px Cinzel, serif';
+        bCtx.textAlign = 'center';
+        bCtx.fillText(titleText, 512, 118);
+
+        bCtx.fillStyle = '#FFFFFF';
+        bCtx.font = '600 28px Inter, sans-serif';
+        bCtx.fillText(subtitleText, 512, 195);
+
+        const boardTex = new THREE.CanvasTexture(bCanvas);
+        const faceMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(3.0, 0.76),
+          new THREE.MeshBasicMaterial({ map: boardTex })
+        );
+        faceMesh.position.set(0, 1.065, 0.065);
+        faceMesh.rotation.x = -0.25;
+        boardGroup.add(faceMesh);
+
+        boardGroup.position.set(x, 0, z);
+        boardGroup.rotation.y = rotY;
+        vrScene.add(boardGroup);
+      }
+
+      // =========================================================================
+      // ZON WARISAN 1 (TENGAH): MENARA JAM ATKINSON (1905)
+      // =========================================================================
+      createExhibitionPlinth(0, 0, 3.3);
+      createHeritageNameboard(
+        "MENARA JAM ATKINSON (1905)",
+        "Struktur Kayu Bersejarah Tertua • Kota Kinabalu, Sabah",
+        0, 3.65, 0
+      );
+      const miniTower = new THREE.Group();
+      const mCreamMat = new THREE.MeshStandardMaterial({ color: 0xFAF6EE, roughness: 0.5 });
+      const mTrimMat = new THREE.MeshStandardMaterial({ color: 0xE2E8F0, roughness: 0.6 });
+      const mLouverMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 });
+      const mDarkMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.5 });
+      const mTerracottaMat = new THREE.MeshStandardMaterial({ color: 0xD96B27, roughness: 0.45 });
+      const mEaveMat = new THREE.MeshStandardMaterial({ color: 0x4A2E1B, roughness: 0.7 });
+      const mWhiteFenceMat = new THREE.MeshStandardMaterial({ color: 0xF8FAFC, roughness: 0.4 });
+
+      const mStep1 = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.25, 2.1), mTrimMat);
+      mStep1.position.y = 0.25;
+      const mStep2 = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.25, 1.75), mCreamMat);
+      mStep2.position.y = 0.5;
+      miniTower.add(mStep1, mStep2);
+
+      const fDist = 2.55;
+      [
+        { pos: [0, 0.6, fDist], rotY: 0 },
+        { pos: [0, 0.6, -fDist], rotY: 0 },
+        { pos: [fDist, 0.6, 0], rotY: Math.PI / 2 },
+        { pos: [-fDist, 0.6, 0], rotY: Math.PI / 2 }
+      ].forEach(side => {
+        const fGrp = new THREE.Group();
+        const topRail = new THREE.Mesh(new THREE.BoxGeometry(fDist * 2, 0.05, 0.05), mWhiteFenceMat);
+        const botRail = new THREE.Mesh(new THREE.BoxGeometry(fDist * 2, 0.05, 0.05), mWhiteFenceMat);
+        botRail.position.y = -0.35;
+        fGrp.add(topRail, botRail);
+        for (let px = -fDist; px <= fDist; px += 0.25) {
+          const picket = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.65, 0.04), mWhiteFenceMat);
+          picket.position.set(px, -0.22, 0);
+          fGrp.add(picket);
+        }
+        fGrp.position.set(...side.pos);
+        fGrp.rotation.y = side.rotY;
+        miniTower.add(fGrp);
+      });
+
+      const mShaft = new THREE.Mesh(new THREE.BoxGeometry(1.35, 5.5, 1.35), mCreamMat);
+      mShaft.position.y = 3.35;
+      miniTower.add(mShaft);
+
+      const mDoor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.68, 0.08), mDarkMat);
+      mDoor.position.set(0.3, 0.96, 0.68);
+      miniTower.add(mDoor);
+
+      [
+        { pos: [0, 2.85, 0.68], rotY: 0 },
+        { pos: [0, 2.85, -0.68], rotY: Math.PI },
+        { pos: [0.68, 2.85, 0], rotY: Math.PI / 2 },
+        { pos: [-0.68, 2.85, 0], rotY: -Math.PI / 2 }
+      ].forEach(s => {
+        const louver = new THREE.Mesh(new THREE.BoxGeometry(0.46, 2.45, 0.06), mLouverMat);
+        louver.position.set(...s.pos);
+        louver.rotation.y = s.rotY;
+        miniTower.add(louver);
+
+        const topWin = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.42, 0.06), mDarkMat);
+        topWin.position.set(s.pos[0], 5.65, s.pos[2]);
+        topWin.rotation.y = s.rotY;
+        miniTower.add(topWin);
+      });
+
+      const mFaceGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.07, 24);
+      const mFaceMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
+      const mRimGeo = new THREE.TorusGeometry(0.3, 0.03, 12, 24);
+      const mArchGeo = new THREE.TorusGeometry(0.32, 0.035, 10, 20, Math.PI);
+
+      [
+        { pos: [0, 4.95, 0.69], rot: [Math.PI / 2, 0, 0], rimRot: [0, 0, 0] },
+        { pos: [0, 4.95, -0.69], rot: [Math.PI / 2, 0, 0], rimRot: [0, 0, 0] },
+        { pos: [0.69, 4.95, 0], rot: [0, 0, Math.PI / 2], rimRot: [0, Math.PI / 2, 0] },
+        { pos: [-0.69, 4.95, 0], rot: [0, 0, Math.PI / 2], rimRot: [0, Math.PI / 2, 0] }
+      ].forEach(cp => {
+        const face = new THREE.Mesh(mFaceGeo, mFaceMat);
+        face.position.set(...cp.pos);
+        face.rotation.set(...cp.rot);
+        miniTower.add(face);
+
+        const rim = new THREE.Mesh(mRimGeo, mDarkMat);
+        rim.position.set(...cp.pos);
+        rim.rotation.set(...cp.rimRot);
+        miniTower.add(rim);
+
+        const arch = new THREE.Mesh(mArchGeo, mDarkMat);
+        arch.position.set(cp.pos[0], cp.pos[1] + 0.12, cp.pos[2]);
+        arch.rotation.set(...cp.rimRot);
+        miniTower.add(arch);
+      });
+
+      const mEave = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.12, 1.75), mEaveMat);
+      mEave.position.y = 6.12;
+      const mRoofLower = new THREE.Mesh(new THREE.ConeGeometry(1.25, 0.72, 4), mTerracottaMat);
+      mRoofLower.position.y = 6.52;
+      mRoofLower.rotation.y = Math.PI / 4;
+      const mRoofUpper = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.75, 4), mTerracottaMat);
+      mRoofUpper.position.y = 7.05;
+      mRoofUpper.rotation.y = Math.PI / 4;
+
+      const mSpire = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.9, 8), goldTrimMat);
+      mSpire.position.y = 7.75;
+      const mCross1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.03), goldTrimMat);
+      mCross1.position.y = 7.9;
+      const mCross2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.5), goldTrimMat);
+      mCross2.position.y = 7.9;
+
+      miniTower.add(mEave, mRoofLower, mRoofUpper, mSpire, mCross1, mCross2);
+      miniTower.position.set(0, 0.25, 0);
+      vrScene.add(miniTower);
+
+      // =========================================================================
+      // ZON WARISAN 2 (SAYAP KIRI: x = -11, z = -3): BANGUNAN PEJABAT POS LAMA JESSELTON (1918)
+      // =========================================================================
+      createExhibitionPlinth(-11, -3, 3.2);
+      createHeritageNameboard(
+        "PEJABAT POS LAMA JESSELTON (1918)",
+        "Monumen Seni Bina Kolonial • Jalan Gaya, Kota Kinabalu",
+        -7.8, -1.2, Math.PI / 3
+      );
+      const postOfficeGroup = new THREE.Group();
+      const poWallMat = new THREE.MeshStandardMaterial({ color: 0xF5F2EB, roughness: 0.5 });
+      const poRoofMat = new THREE.MeshStandardMaterial({ color: 0x8B261D, roughness: 0.5 });
+      const poPillarMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.3 });
+
+      const poMainBody = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.4, 2.4), poWallMat);
+      poMainBody.position.y = 1.55;
+      postOfficeGroup.add(poMainBody);
+
+      // Tiang-tiang Roman / Kolonial di bahagian hadapan
+      for (let px = -1.5; px <= 1.5; px += 0.75) {
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 2.3, 16), poPillarMat);
+        col.position.set(px, 1.5, 1.32);
+        postOfficeGroup.add(col);
+      }
+
+      // Pedimen Segitiga Klasik & Bumbung Genting Merah
+      const poRoof = new THREE.Mesh(new THREE.ConeGeometry(2.8, 1.2, 4), poRoofMat);
+      poRoof.position.y = 3.35;
+      poRoof.rotation.y = Math.PI / 4;
+      postOfficeGroup.add(poRoof);
+
+      postOfficeGroup.position.set(-11, 0.1, -3);
+      postOfficeGroup.rotation.y = Math.PI / 3;
+      vrScene.add(postOfficeGroup);
+
+      // =========================================================================
+      // ZON WARISAN 3 (SAYAP KANAN: x = 11, z = -3): TUGU PERINGATAN PERANG PETAGAS (1946)
+      // =========================================================================
+      createExhibitionPlinth(11, -3, 3.2);
+      createHeritageNameboard(
+        "TUGU PERINGATAN PERANG PETAGAS (1946)",
+        "Memperingati 324 Wira Gerila Kinabalu • Putatan, Sabah",
+        7.8, -1.2, -Math.PI / 3
+      );
+      const petagasGroup = new THREE.Group();
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0xE2E8F0, roughness: 0.4 });
+      const plaqueMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, metalness: 0.6, roughness: 0.3 });
+
+      const pBase1 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.4, 3.2), stoneMat);
+      pBase1.position.y = 0.5;
+      const pBase2 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 2.2), stoneMat);
+      pBase2.position.y = 0.95;
+      const pObelisk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.65, 3.6, 4), stoneMat);
+      pObelisk.position.y = 3.0;
+      pObelisk.rotation.y = Math.PI / 4;
+
+      const pPlaque = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.1, 0.08), plaqueMat);
+      pPlaque.position.set(0, 2.3, 0.44);
+
+      const pTopGold = new THREE.Mesh(new THREE.OctahedronGeometry(0.28), goldTrimMat);
+      pTopGold.position.y = 5.05;
+
+      petagasGroup.add(pBase1, pBase2, pObelisk, pPlaque, pTopGold);
+      petagasGroup.position.set(11, 0.1, -3);
+      petagasGroup.rotation.y = -Math.PI / 3;
+      vrScene.add(petagasGroup);
+
+      // =========================================================================
+      // ZON WARISAN 4 (BELAKANG / HADAPAN PENTAS: x = 0, z = -11.5): RUMAH TRADISIONAL & GONG WARISAN SABAH
+      // =========================================================================
+      createExhibitionPlinth(0, -11.5, 3.2);
+      createHeritageNameboard(
+        "RUMAH TRADISIONAL & WARISAN ETNIK SABAH",
+        "Seni Bina Bambu, Atap Rumbia & Gong Tembaga Sabah",
+        0, -7.85, 0
+      );
+      const tradHouseGroup = new THREE.Group();
+      const bambooMat = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.7 });
+      const thatchMat = new THREE.MeshStandardMaterial({ color: 0x5C3A21, roughness: 0.85 });
+
+      // Tiang rumah bertiang tinggi (stilt house)
+      [[-1.2, -0.9], [1.2, -0.9], [-1.2, 0.9], [1.2, 0.9]].forEach(([sx, sz]) => {
+        const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.3, 12), darkWoodMat);
+        stilt.position.set(sx, 0.9, sz);
+        tradHouseGroup.add(stilt);
+      });
+
+      const houseBody = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.4, 2.1), bambooMat);
+      houseBody.position.y = 2.15;
+      tradHouseGroup.add(houseBody);
+
+      // Pintu & Tingkap Rumah Tradisional + Tangga Kayu Hadapan
+      const houseDoor = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.95, 0.08), darkWoodMat);
+      houseDoor.position.set(0, 1.95, 1.07);
+      tradHouseGroup.add(houseDoor);
+
+      [-0.85, 0.85].forEach(wx => {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.08), darkWoodMat);
+        win.position.set(wx, 2.2, 1.07);
+        tradHouseGroup.add(win);
+      });
+
+      const houseLadder = new THREE.Mesh(new THREE.BoxGeometry(0.48, 1.55, 0.12), darkWoodMat);
+      houseLadder.position.set(0, 0.85, 1.38);
+      houseLadder.rotation.x = -0.35;
+      tradHouseGroup.add(houseLadder);
+
+      const houseRoof = new THREE.Mesh(new THREE.ConeGeometry(2.3, 1.35, 4), thatchMat);
+      houseRoof.position.y = 3.5;
+      houseRoof.rotation.y = Math.PI / 4;
+      tradHouseGroup.add(houseRoof);
+
+      // Bingkai Kayu & Gong Tembaga Warisan di Sisi Kanan Rumah Tradisional
+      const gongStandLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.6, 10), darkWoodMat);
+      gongStandLeft.position.set(1.85, 1.1, 0.5);
+      const gongStandRight = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.6, 10), darkWoodMat);
+      gongStandRight.position.set(2.55, 1.1, 0.5);
+      const gongTopBar = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.08, 0.08), darkWoodMat);
+      gongTopBar.position.set(2.2, 1.88, 0.5);
+
+      const gongDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.08, 24), goldTrimMat);
+      gongDisc.rotation.x = Math.PI / 2;
+      gongDisc.position.set(2.2, 1.32, 0.5);
+
+      const gongBoss = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 16), goldTrimMat);
+      gongBoss.position.set(2.2, 1.32, 0.55);
+
+      tradHouseGroup.add(gongStandLeft, gongStandRight, gongTopBar, gongDisc, gongBoss);
+
+      // Masukkan kumpulan visual Rumah Tradisional & Gong ke dalam adegan 3D muzium
+      tradHouseGroup.position.set(0, 0.1, -11.5);
+      vrScene.add(tradHouseGroup);
+
+      // Titik sauh 3D bagi semua butang kecil interaktif di sekitar kesemua paparan warisan muzium
+      vrPinAnchors = [
+        // 1. Menara Jam Atkinson (Tengah: x=0, z=0)
+        { id: 'pin-roof', pos: new THREE.Vector3(0.75, 7.1, 0.2) },
+        { id: 'pin-clock', pos: new THREE.Vector3(-0.9, 5.1, 0.65) },
+        { id: 'pin-louvers', pos: new THREE.Vector3(0.9, 3.4, 0.65) },
+        { id: 'pin-wood', pos: new THREE.Vector3(-0.95, 2.2, 0.65) },
+        { id: 'pin-base', pos: new THREE.Vector3(1.4, 0.9, 1.8) },
+
+        // 2. Bangunan Pejabat Pos Lama Jesselton (Kiri: x=-11, z=-3)
+        { id: 'pin-po_roof', pos: new THREE.Vector3(-11, 3.8, -3) },
+        { id: 'pin-po_pillars', pos: new THREE.Vector3(-9.7, 2.1, -2.0) },
+        { id: 'pin-po_history', pos: new THREE.Vector3(-12.2, 1.3, -2.5) },
+
+        // 3. Tugu Peringatan Perang Petagas (Kanan: x=11, z=-3)
+        { id: 'pin-petagas_spire', pos: new THREE.Vector3(11, 5.1, -3) },
+        { id: 'pin-petagas_plaque', pos: new THREE.Vector3(10.1, 2.6, -2.2) },
+        { id: 'pin-petagas_date', pos: new THREE.Vector3(11.9, 1.1, -2.3) },
+
+        // 4. Rumah Tradisional & Gong Sabah (Belakang Tengah: x=0, z=-11.5)
+        { id: 'pin-house_roof', pos: new THREE.Vector3(-0.5, 4.1, -11.5) },
+        { id: 'pin-house_stilts', pos: new THREE.Vector3(-1.3, 1.3, -10.5) },
+        { id: 'pin-sabah_gong', pos: new THREE.Vector3(2.1, 1.5, -10.8) },
+
+        // 5. Seni Bina Dewan Muzium
+        { id: 'pin-museum_stairs', pos: new THREE.Vector3(-6.5, 6.2, -13.5) },
+        { id: 'pin-museum_tiles', pos: new THREE.Vector3(3.6, 0.25, 5.5) }
+      ];
+
+      // Kawalan Seret Tetikus & Sentuhan untuk Pandang 360°
+      container.addEventListener('pointerdown', e => {
+        isVrDragging = true;
+        isAutoMovingVR = false;
+        vrStartX = e.clientX;
+        vrStartY = e.clientY;
+      });
+      window.addEventListener('pointermove', e => {
+        if (!isVrDragging) return;
+        vrLon += (e.clientX - vrStartX) * 0.22;
+        vrLat += (e.clientY - vrStartY) * 0.18;
+        vrLat = Math.max(-55, Math.min(55, vrLat));
+        vrStartX = e.clientX;
+        vrStartY = e.clientY;
+      });
+      window.addEventListener('pointerup', () => isVrDragging = false);
+
+      // Kawalan Papan Kekunci WASD / Anak Panah untuk Berjalan di Sekitar Muzium
+      window.addEventListener('keydown', e => {
+        if (document.getElementById('page-vr360')?.classList.contains('hidden')) return;
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+        const k = e.key.toLowerCase();
+        if (k === 'w' || e.key === 'ArrowUp') { setVRMove('forward', true); e.preventDefault(); }
+        if (k === 's' || e.key === 'ArrowDown') { setVRMove('backward', true); e.preventDefault(); }
+        if (k === 'a' || e.key === 'ArrowLeft') { setVRMove('left', true); e.preventDefault(); }
+        if (k === 'd' || e.key === 'ArrowRight') { setVRMove('right', true); e.preventDefault(); }
+      });
+      window.addEventListener('keyup', e => {
+        const k = e.key.toLowerCase();
+        if (k === 'w' || e.key === 'ArrowUp') setVRMove('forward', false);
+        if (k === 's' || e.key === 'ArrowDown') setVRMove('backward', false);
+        if (k === 'a' || e.key === 'ArrowLeft') setVRMove('left', false);
+        if (k === 'd' || e.key === 'ArrowRight') setVRMove('right', false);
+      });
+
+      function updateFloatingPins() {
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        vrPinAnchors.forEach(anchor => {
+          const el = document.getElementById(anchor.id);
+          if (!el) return;
+          const distToCam = vrCamera.position.distanceTo(anchor.pos);
+          const projected = anchor.pos.clone().project(vrCamera);
+          // Paparkan butang hanya apabila berada di hadapan kamera dan dalam jarak pandangan munasabah
+          if (projected.z > 1 || distToCam > 24) {
+            el.style.display = 'none';
+          } else {
+            const x = (projected.x * 0.5 + 0.5) * width;
+            const y = (-projected.y * 0.5 + 0.5) * height;
+            if (x >= 24 && x <= width - 24 && y >= 50 && y <= height - 80) {
+              el.style.display = 'flex';
+              el.style.left = `${x}px`;
+              el.style.top = `${y}px`;
+            } else {
+              el.style.display = 'none';
+            }
+          }
+        });
+      }
+
+      function animateVR() {
+        requestAnimationFrame(animateVR);
+        miniTower.rotation.y += 0.004;
+
+        // Pergerakan berjalan bebas (WASD / Pad Arah) mengikut arah pandangan kamera
+        const moveSpeed = 0.16;
+        const radLon = THREE.MathUtils.degToRad(vrLon - 90);
+        const forwardX = Math.cos(radLon);
+        const forwardZ = Math.sin(radLon);
+        const rightX = -Math.sin(radLon);
+        const rightZ = Math.cos(radLon);
+
+        if (vrMoveKeys.forward) {
+          vrCamera.position.x += forwardX * moveSpeed;
+          vrCamera.position.z += forwardZ * moveSpeed;
+        }
+        if (vrMoveKeys.backward) {
+          vrCamera.position.x -= forwardX * moveSpeed;
+          vrCamera.position.z -= forwardZ * moveSpeed;
+        }
+        if (vrMoveKeys.left) {
+          vrCamera.position.x -= rightX * moveSpeed;
+          vrCamera.position.z -= rightZ * moveSpeed;
+        }
+        if (vrMoveKeys.right) {
+          vrCamera.position.x += rightX * moveSpeed;
+          vrCamera.position.z += rightZ * moveSpeed;
+        }
+
+        // Hadkan pergerakan supaya kekal di dalam ruang dewan muzium
+        vrCamera.position.x = Math.max(-17.5, Math.min(17.5, vrCamera.position.x));
+        vrCamera.position.z = Math.max(-17.5, Math.min(17.5, vrCamera.position.z));
+
+        // Animasi gerak lancar apabila pengguna memilih zon dari menu pintasan
+        if (isAutoMovingVR) {
+          vrCamera.position.lerp(vrTargetPos, 0.06);
+          vrLon += (vrTargetLon - vrLon) * 0.06;
+          vrLat += (vrTargetLat - vrLat) * 0.06;
+          if (vrCamera.position.distanceTo(vrTargetPos) < 0.15) {
+            isAutoMovingVR = false;
+          }
+        }
+
+        const lookRadLon = THREE.MathUtils.degToRad(vrLon - 90);
+        const lookRadLat = THREE.MathUtils.degToRad(vrLat);
+        const targetX = vrCamera.position.x + Math.cos(lookRadLat) * Math.cos(lookRadLon) * 15;
+        const targetY = vrCamera.position.y + Math.sin(lookRadLat) * 15;
+        const targetZ = vrCamera.position.z + Math.cos(lookRadLat) * Math.sin(lookRadLon) * 15;
+        vrCamera.lookAt(targetX, targetY, targetZ);
+
+        updateFloatingPins();
+        vrRenderer.render(vrScene, vrCamera);
+      }
+      animateVR();
+    }
+
+    function selectTowerPin(partKey) {
+      const heritagePinData = {
+        // 1. Maklumat Menara Jam Atkinson (5 butang)
+        roof: {
+          title: "Menara Atkinson: Bumbung Piramid Terakota & Penunjuk Angin",
+          desc: "Bumbung piramid melengkung berwarna oren terakota ini direka untuk mengalirkan air hujan tropika dengan pantas, manakala penunjuk arah angin di puncaknya membantu pemantauan cuaca pelabuhan."
+        },
+        clock: {
+          title: "Menara Atkinson: Muka Jam Mekanikal 1905",
+          desc: "Jam bermuka dua buatan William Potts & Sons (Leeds, England) yang dihadiahkan oleh Mary Edith Atkinson bagi memperingati anaknya, Francis George Atkinson, Pegawai Daerah pertama Jesselton."
+        },
+        louvers: {
+          title: "Menara Atkinson: Panel Bilah Pengudaraan (Louvers)",
+          desc: "Bilah pengudaraan menegak berwarna kelabu di keempat-empat sisi badan menara membenarkan aliran udara bebas bagi mengelakkan kelembapan merosakkan mekanisme jam serta struktur kayu."
+        },
+        wood: {
+          title: "Menara Atkinson: Struktur Kayu Merbau Tanpa Paku Besi",
+          desc: "Dibina pada tahun 1905 menggunakan kayu keras tempatan (Merbau/Belian) oleh tukang kayu tempatan bersama tukang kapal tentera laut British, menjadikannya struktur kayu tertua di Kota Kinabalu."
+        },
+        base: {
+          title: "Menara Atkinson: Tapak Bertingkat & Terselamat Perang Dunia II",
+          desc: "Berdiri megah di lereng Bukit Signal. Menara ini merupakan satu daripada tiga bangunan utama di Jesselton yang terselamat daripada pengeboman Perang Dunia Kedua pada tahun 1945."
+        },
+
+        // 2. Maklumat Pejabat Pos Lama Jesselton 1918 (3 butang)
+        po_roof: {
+          title: "Pejabat Pos Lama Jesselton: Bumbung Genting Merah (1918)",
+          desc: "Dibina pada tahun 1918 semasa era pentadbiran Syarikat Berpiagam Borneo Utara British (SBUB) di Jalan Gaya, Kota Kinabalu dengan reka bentuk bumbung limas bergenting tanah liat."
+        },
+        po_pillars: {
+          title: "Pejabat Pos Lama Jesselton: Tiang Klasik Roman",
+          desc: "Barisan tiang putih bergaya klasik kolonial di bahagian hadapan bangunan melambangkan seni bina pentadbiran rasmi awal abad ke-20 di Borneo Utara."
+        },
+        po_history: {
+          title: "Pejabat Pos Lama: Dari Pejabat Perbendaharaan ke Balai Seni Lukis",
+          desc: "Bangunan ini pernah menempatkan Perbendaharaan, Pejabat Audit, Pejabat Pos utama Jesselton serta Balai Seni Lukis Sabah, dan turut terselamat daripada kemusnahan Perang Dunia Kedua."
+        },
+
+        // 3. Maklumat Tugu Peringatan Perang Petagas 1946 (3 butang)
+        petagas_spire: {
+          title: "Tugu Peringatan Perang Petagas: Puncak Obelisk (1946)",
+          desc: "Tugu berbentuk obelisk batu putih ini dirasmikan pada tahun 1946 di Petagas, Putatan sebagai lambang keberanian dan pengorbanan rakyat Sabah menentang penjajahan."
+        },
+        petagas_plaque: {
+          title: "Tugu Petagas: Plak Peringatan 324 Wira Sabah",
+          desc: "Plak peringatan mengabadikan nama-nama 324 orang pejuang Gerila Kinabalu pimpinan Albert Kwok yang terdiri daripada pelbagai kaum dan etnik di Sabah."
+        },
+        petagas_date: {
+          title: "Tugu Petagas: Peristiwa 21 Januari 1944",
+          desc: "Dibina di tapak sebenar tempat para pejuang Gerila Kinabalu gugur syahid pada 21 Januari 1944 semasa Perang Dunia Kedua demi mempertahankan tanah air."
+        },
+
+        // 4. Maklumat Rumah Tradisional & Warisan Etnik Sabah (3 butang)
+        house_roof: {
+          title: "Rumah Tradisional Sabah: Atap Rumbia & Dinding Bambu",
+          desc: "Penggunaan atap daun rumbia/nipah serta dinding buluh beranyam mengekalkan suhu dalaman rumah supaya sentiasa sejuk dan selesa dalam iklim tropika Sabah."
+        },
+        house_stilts: {
+          title: "Rumah Tradisional Sabah: Seni Bina Bertiang Tinggi",
+          desc: "Tiang kayu keras tempatan mengangkat lantai rumah dari permukaan tanah untuk melindungi penghuni daripada banjir kilat, kelembapan serta ancaman haiwan liar."
+        },
+        sabah_gong: {
+          title: "Warisan Etnik Sabah: Gong Tembaga Tradisional",
+          desc: "Gong merupakan warisan budaya tak ketara yang amat bernilai bagi masyarakat Kadazandusun, Murut, Rungus dan etnik Sabah dalam upacara adat, perkahwinan dan Pesta Kaamatan."
+        },
+
+        // 5. Seni Bina Dewan Muzium (2 butang)
+        museum_stairs: {
+          title: "Dewan Muzium: Tangga Agam & Balkoni Kayu Ukiran",
+          desc: "Seni bina dalaman ruang legar muzium menampilkan tangga simetri marmar dan balkoni kayu berukir motif flora tempatan Sabah."
+        },
+        museum_tiles: {
+          title: "Dewan Muzium: Lantai Jubin Bermotif Klasik",
+          desc: "Corak geometri biru-putih dan emas pada lantai dewan utama mencerminkan kehalusan seni hiasan warisan bangunan bersejarah di Borneo."
+        }
+      };
+
+      const data = heritagePinData[partKey];
+      if (!data) return;
+      document.getElementById('hotspot-title').textContent = data.title;
+      document.getElementById('hotspot-desc').textContent = data.desc;
+
+      // Serlahkan butang aktif
+      document.querySelectorAll('#vr-floating-pins button').forEach(btn => {
+        btn.classList.remove('ring-2', 'ring-white', 'scale-110');
+      });
+      const activeBtn = document.getElementById(`pin-${partKey}`);
+      if (activeBtn) {
+        activeBtn.classList.add('ring-2', 'ring-white', 'scale-110');
+      }
+    }
+
+    function focusHotspot(idx) {
+      const zones = [
+        {
+          pos: new THREE.Vector3(0, 4.2, 11.5), lon: 0, lat: -8,
+          title: "1. Menara Jam Atkinson (1905) – Pentas Utama",
+          desc: "Struktur kayu bersejarah tertua di Kota Kinabalu. Tekan butang emas di sekitar menara untuk meneroka bumbung terakota, muka jam 1905, panel pengudaraan dan tapaknya."
+        },
+        {
+          pos: new THREE.Vector3(-4.5, 3.6, 2.5), lon: -50, lat: -5,
+          title: "2. Bangunan Pejabat Pos Lama Jesselton (1918)",
+          desc: "Monumen seni bina kolonial di Jalan Gaya yang terselamat semasa Perang Dunia Kedua. Tekan butang biru di sekitar replika bangunan untuk maklumat lanjut."
+        },
+        {
+          pos: new THREE.Vector3(4.5, 3.6, 2.5), lon: 50, lat: -5,
+          title: "3. Tugu Peringatan Perang Petagas (1946)",
+          desc: "Tugu memperingati pengorbanan 324 pejuang Gerila Kinabalu di Petagas, Putatan. Tekan butang hijau di sekitar tugu untuk membaca kisah sejarahnya."
+        },
+        {
+          pos: new THREE.Vector3(0, 3.6, -4.5), lon: 0, lat: -6,
+          title: "4. Rumah Tradisional & Warisan Etnik Sabah",
+          desc: "Mempamerkan kehalusan seni bina rumah bertiang tinggi dan alat muzik gong warisan pelbagai etnik Sabah. Tekan butang jingga untuk penerangan terperinci."
+        }
+      ];
+      const z = zones[idx];
+      if (!z) return;
+      vrTargetPos.copy(z.pos);
+      vrTargetLon = z.lon;
+      vrTargetLat = z.lat;
+      isAutoMovingVR = true;
+      document.getElementById('hotspot-title').textContent = z.title;
+      document.getElementById('hotspot-desc').textContent = z.desc;
+    }
+
+    function playCurrentHotspotAudio() {
+      const descText = document.getElementById('hotspot-desc').textContent;
+      const banner = document.getElementById('subtitle-banner');
+      const subText = document.getElementById('subtitle-text');
+      const stopBtn = document.getElementById('global-stop-audio');
+
+      subText.textContent = descText;
+      banner.classList.remove('hidden');
+      stopBtn.classList.remove('hidden');
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(descText);
+        utterance.lang = currentLang === 'ms' ? 'ms-MY' : 'en-US';
+        utterance.rate = 0.95;
+        utterance.onend = () => stopBtn.classList.add('hidden');
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function setVRDeviceMode(mode) {
+      document.querySelectorAll('.vr-mode-btn').forEach(btn => {
+        btn.classList.remove('bg-heritage-navy', 'text-white');
+        btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+      });
+      const activeBtn = document.getElementById(`mode-${mode}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-heritage-navy', 'text-white');
+        activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+      }
+      if (mode === 'mobile' && window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', e => {
+          if (e.alpha !== null && e.beta !== null) {
+            vrLon = -e.alpha;
+            vrLat = Math.max(-55, Math.min(55, e.beta - 45));
+          }
+        });
+      }
+    }
+
+    // 5. MODEL 3D INTERAKTIF MENARA JAM ATKINSON (HALAMAN 4 - RUJUKAN GAMBAR 2)
+    let model3DInitialized = false;
+    let towerGroup, camera3D, scene3D, renderer3D;
+    let autoRotate3D = true;
+    let targetCamY = 6.0, targetCamZ = 15;
+
+    function initModel3D() {
+      const container = document.getElementById('threejs-tower-container');
+      if (!container || model3DInitialized) return;
+      model3DInitialized = true;
+
+      scene3D = new THREE.Scene();
+      camera3D = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera3D.position.set(0, 6.0, 15);
+
+      renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer3D.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer3D.domElement);
+
+      // Pencahayaan Semula Jadi Bukit Signal
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      scene3D.add(ambientLight);
+      const dirLight = new THREE.DirectionalLight(0xFFFBEB, 1.1);
+      dirLight.position.set(12, 20, 14);
+      scene3D.add(dirLight);
+
+      towerGroup = new THREE.Group();
+
+      // Bahan Rujukan Gambar 2: Dinding Putih Gading, Bumbung Oren Terakota, Bilah Kelabu & Pagar Putih
+      const creamWallMat = new THREE.MeshStandardMaterial({ color: 0xFAF6EE, roughness: 0.55 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: 0xE2E8F0, roughness: 0.6 });
+      const louverMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 });
+      const darkArchMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.5 });
+      const terracottaRoofMat = new THREE.MeshStandardMaterial({ color: 0xD96B27, roughness: 0.45 });
+      const eaveWoodMat = new THREE.MeshStandardMaterial({ color: 0x4A2E1B, roughness: 0.7 });
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, metalness: 0.7, roughness: 0.25 });
+      const whiteFenceMat = new THREE.MeshStandardMaterial({ color: 0xF8FAFC, roughness: 0.4 });
+
+      // 1. Tapak Rumput Bukit Signal & Pokok Rimba Tropika di Belakang
+      const ground = new THREE.Mesh(new THREE.CylinderGeometry(6.2, 6.8, 0.5, 32), new THREE.MeshStandardMaterial({ color: 0x2D5A27 }));
+      ground.position.y = -0.25;
+      towerGroup.add(ground);
+
+      // Rimba pepohon hijau di latar belakang menara (Rujukan Gambar 2)
+      const foliageMat = new THREE.MeshStandardMaterial({ color: 0x1E3F20, roughness: 0.9 });
+      [[-3.8, 2.2, -3.5, 2.4], [3.6, 2.5, -3.2, 2.6], [0, 3.0, -4.4, 2.9], [-4.5, 1.5, -1.2, 1.8], [4.4, 1.6, -1.0, 1.9]].forEach(([bx, by, bz, br]) => {
+        const bush = new THREE.Mesh(new THREE.DodecahedronGeometry(br, 1), foliageMat);
+        bush.position.set(bx, by, bz);
+        towerGroup.add(bush);
+      });
+
+      // 2. Pagar Besi Putih di Sekeliling Tapak Menara (Rujukan Gambar 2)
+      const fenceSize = 4.6;
+      const railTop = new THREE.BoxGeometry(fenceSize * 2, 0.08, 0.08);
+      const railBot = new THREE.BoxGeometry(fenceSize * 2, 0.08, 0.08);
+      const picketGeo = new THREE.BoxGeometry(0.06, 0.95, 0.06);
+
+      [
+        { pos: [0, 0.85, fenceSize], rotY: 0 },
+        { pos: [0, 0.85, -fenceSize], rotY: 0 },
+        { pos: [fenceSize, 0.85, 0], rotY: Math.PI / 2 },
+        { pos: [-fenceSize, 0.85, 0], rotY: Math.PI / 2 }
+      ].forEach(side => {
+        const sideGroup = new THREE.Group();
+        const t = new THREE.Mesh(railTop, whiteFenceMat);
+        const b = new THREE.Mesh(railBot, whiteFenceMat);
+        b.position.y = -0.55;
+        sideGroup.add(t, b);
+        for (let px = -fenceSize; px <= fenceSize; px += 0.35) {
+          const picket = new THREE.Mesh(picketGeo, whiteFenceMat);
+          picket.position.set(px, -0.35, 0);
+          sideGroup.add(picket);
+        }
+        sideGroup.position.set(...side.pos);
+        sideGroup.rotation.y = side.rotY;
+        towerGroup.add(sideGroup);
+      });
+
+      // 3. Tapak Bertingkat Putih Gading
+      const step1 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.45, 3.2), trimMat);
+      step1.position.y = 0.22;
+      const step2 = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.45, 2.6), creamWallMat);
+      step2.position.y = 0.65;
+      towerGroup.add(step1, step2);
+
+      // 4. Badan Menara Tinggi Lampai Putih Gading (Rujukan Gambar 2)
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(2.05, 8.6, 2.05), creamWallMat);
+      shaft.position.y = 5.15;
+      towerGroup.add(shaft);
+
+      // Kornis Mendatar Pemisah Aras
+      [1.3, 6.8, 9.35].forEach(cy => {
+        const band = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.16, 2.22), trimMat);
+        band.position.y = cy;
+        towerGroup.add(band);
+      });
+
+      // Pintu Melengkung Kecil di Bahagian Bawah
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.05, 0.12), darkArchMat);
+      door.position.set(0.45, 1.85, 1.02);
+      towerGroup.add(door);
+
+      // 5. Panel Pengudaraan Berbilah Menegak Kelabu (Vertical Louvers) pada Keempat-empat Sisi
+      const louverPanelGeo = new THREE.BoxGeometry(0.68, 3.8, 0.08);
+      const smallTopWindowGeo = new THREE.BoxGeometry(0.38, 0.65, 0.08);
+
+      const sides = [
+        { pos: [0, 4.4, 1.03], rotY: 0 },
+        { pos: [0, 4.4, -1.03], rotY: Math.PI },
+        { pos: [1.03, 4.4, 0], rotY: Math.PI / 2 },
+        { pos: [-1.03, 4.4, 0], rotY: -Math.PI / 2 }
+      ];
+
+      sides.forEach(s => {
+        const panel = new THREE.Mesh(louverPanelGeo, louverMat);
+        panel.position.set(...s.pos);
+        panel.rotation.y = s.rotY;
+        towerGroup.add(panel);
+
+        // Tingkap pengudaraan atas di atas jam
+        const topWin = new THREE.Mesh(smallTopWindowGeo, darkArchMat);
+        topWin.position.set(s.pos[0], 8.75, s.pos[2]);
+        topWin.rotation.y = s.rotY;
+        towerGroup.add(topWin);
+      });
+
+      // 6. Muka Jam Bulat & Gerbang Hiasan Gelap pada Keempat-empat Sisi (Rujukan Gambar 2)
+      const faceGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.1, 32);
+      const faceMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
+      const rimGeo = new THREE.TorusGeometry(0.46, 0.045, 16, 32);
+      const archGeo = new THREE.TorusGeometry(0.48, 0.05, 12, 24, Math.PI);
+
+      const clockPositions = [
+        { pos: [0, 7.65, 1.04], rot: [Math.PI / 2, 0, 0], rimRot: [0, 0, 0] },
+        { pos: [0, 7.65, -1.04], rot: [Math.PI / 2, 0, 0], rimRot: [0, 0, 0] },
+        { pos: [1.04, 7.65, 0], rot: [0, 0, Math.PI / 2], rimRot: [0, Math.PI / 2, 0] },
+        { pos: [-1.04, 7.65, 0], rot: [0, 0, Math.PI / 2], rimRot: [0, Math.PI / 2, 0] }
+      ];
+
+      clockPositions.forEach(cp => {
+        const face = new THREE.Mesh(faceGeo, faceMat);
+        face.position.set(...cp.pos);
+        face.rotation.set(...cp.rot);
+        towerGroup.add(face);
+
+        const rim = new THREE.Mesh(rimGeo, darkArchMat);
+        rim.position.set(...cp.pos);
+        rim.rotation.set(...cp.rimRot);
+        towerGroup.add(rim);
+
+        // Gerbang hiasan di atas muka jam
+        const arch = new THREE.Mesh(archGeo, darkArchMat);
+        arch.position.set(cp.pos[0], cp.pos[1] + 0.18, cp.pos[2]);
+        arch.rotation.set(...cp.rimRot);
+        towerGroup.add(arch);
+      });
+
+      // 7. Bumbung Piramid Melengkung Oren Terakota & Cucur Atap Kayu Gelap (Rujukan Gambar 2)
+      const roofEave = new THREE.Mesh(new THREE.BoxGeometry(2.65, 0.18, 2.65), eaveWoodMat);
+      roofEave.position.y = 9.5;
+      towerGroup.add(roofEave);
+
+      const roofLower = new THREE.Mesh(new THREE.ConeGeometry(1.85, 1.1, 4), terracottaRoofMat);
+      roofLower.position.y = 10.1;
+      roofLower.rotation.y = Math.PI / 4;
+      towerGroup.add(roofLower);
+
+      const roofSpireCone = new THREE.Mesh(new THREE.ConeGeometry(0.95, 1.15, 4), terracottaRoofMat);
+      roofSpireCone.position.y = 10.95;
+      roofSpireCone.rotation.y = Math.PI / 4;
+      towerGroup.add(roofSpireCone);
+
+      // 8. Penunjuk Arah Angin (Weathervane) Emas di Puncak
+      const spirePole = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 1.35, 12), goldMat);
+      spirePole.position.y = 12.0;
+      const crossBar1 = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 0.04), goldMat);
+      crossBar1.position.y = 12.25;
+      const crossBar2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.75), goldMat);
+      crossBar2.position.y = 12.25;
+      towerGroup.add(spirePole, crossBar1, crossBar2);
+
+      towerGroup.position.y = -5.2;
+      scene3D.add(towerGroup);
+
+      // Interaksi Putaran & Zum Tetikus/Sentuh
+      let isDragging3D = false, prevX = 0;
+      container.addEventListener('pointerdown', e => {
+        isDragging3D = true;
+        prevX = e.clientX;
+      });
+      window.addEventListener('pointermove', e => {
+        if (!isDragging3D) return;
+        towerGroup.rotation.y += (e.clientX - prevX) * 0.012;
+        prevX = e.clientX;
+      });
+      window.addEventListener('pointerup', () => isDragging3D = false);
+      container.addEventListener('wheel', e => {
+        e.preventDefault();
+        targetCamZ = Math.max(7, Math.min(22, targetCamZ + e.deltaY * 0.01));
+      }, { passive: false });
+
+      function animate3D() {
+        requestAnimationFrame(animate3D);
+        if (autoRotate3D && !isDragging3D) {
+          towerGroup.rotation.y += 0.005;
+        }
+        camera3D.position.y += (targetCamY - camera3D.position.y) * 0.08;
+        camera3D.position.z += (targetCamZ - camera3D.position.z) * 0.08;
+        camera3D.lookAt(0, 1.2, 0);
+        renderer3D.render(scene3D, camera3D);
+      }
+      animate3D();
+    }
+
+    function toggleAutoRotate3D() {
+      autoRotate3D = !autoRotate3D;
+      const btn = document.getElementById('btn-autorotate');
+      btn.innerHTML = autoRotate3D
+        ? '<i class="fa-solid fa-sync fa-spin"></i> Putaran Auto: ON'
+        : '<i class="fa-solid fa-pause"></i> Putaran Auto: OFF';
+    }
+
+    function resetCamera3D() {
+      targetCamY = 5.5;
+      targetCamZ = 14;
+    }
+
+    function inspectPart3D(part) {
+      const info = {
+        roof: { y: 8.8, z: 9, title: "Bumbung Piramid Terakota & Penunjuk Angin", desc: "Bumbung piramid melengkung berwarna oren terakota dengan cucur atap kayu gelap serta penunjuk arah angin di puncaknya." },
+        clock: { y: 6.5, z: 8.5, title: "Muka Jam & Gerbang Hiasan (W. Potts & Sons)", desc: "Muka jam bulat berbingkai gelap dengan lengkungan gerbang hiasan di atasnya serta tingkap pengudaraan kecil di bahagian atas." },
+        body: { y: 3.5, z: 9.5, title: "Badan Menara Putih & Panel Bilah Pengudaraan", desc: "Badan menara tinggi lampai berwarna putih gading dengan panel berbilah kelabu menegak (louvers) untuk pengudaraan jentera jam." },
+        base: { y: 1.2, z: 10.5, title: "Tapak Bertingkat & Pagar Besi Putih", desc: "Tapak konkrit bertingkat dikelilingi pagar besi putih yang tersergam indah di kaki Bukit Signal yang menghijau." }
+      };
+      const selected = info[part];
+      targetCamY = selected.y;
+      targetCamZ = selected.z;
+      document.getElementById('part3d-title').textContent = selected.title;
+      document.getElementById('part3d-desc').textContent = selected.desc;
+    }
+
+    // 6. PERMAINAN KUIZ SASARAN INTERAKTIF (GOOGLE MEDIAPIPE HANDS + WEB AUDIO)
+    // Bank Soalan: Gabungan Pelbagai Warisan Sejarah Sabah & Kata Nama Am Aras 4
+    const questionBank = [
+      {
+        category: "Warisan Sejarah Sabah",
+        question: "Di manakah terletaknya Tugu Peringatan Perang Petagas yang memperingati 324 wira Gerila Kinabalu?",
+        options: ["Putatan", "Sandakan", "Kudat", "Tawau"],
+        answer: "Putatan",
+        explanation: "Tugu Peringatan Perang Petagas terletak di Petagas, Putatan bagi mengenang 324 pejuang Gerila Kinabalu yang gugur pada 21 Januari 1944."
+      },
+      {
+        category: "Kata Nama Am (Aras 4)",
+        question: "Pilih KATA NAMA AM KONKRIT bagi bahan semula jadi pembinaan Rumah Tradisional Sabah.",
+        options: ["buluh", "keberanian", "Jesselton", "Petagas"],
+        answer: "buluh",
+        explanation: "'Buluh' ialah kata nama am konkrit (boleh dilihat/dipegang). 'Jesselton' & 'Petagas' ialah kata nama khas, manakala 'keberanian' ialah kata nama abstrak."
+      },
+      {
+        category: "Warisan Sejarah Sabah",
+        question: "Bilakah Bangunan Pejabat Pos Lama Jesselton di Jalan Gaya dibina?",
+        options: ["1918", "1902", "1957", "1963"],
+        answer: "1918",
+        explanation: "Bangunan Pejabat Pos Lama Jesselton dibina pada tahun 1918 dan merupakan antara bangunan bersejarah yang terselamat semasa Perang Dunia Kedua."
+      },
+      {
+        category: "Kata Nama Am (Aras 4)",
+        question: "Dalam ayat 'Pelancong mengagumi keindahan seni bina tugu itu', perkataan 'pelancong' ialah...",
+        options: ["Kata Nama Am Hidup Manusia", "Kata Nama Khas", "Kata Nama Am Tak Hidup", "Kata Ganti Nama"],
+        answer: "Kata Nama Am Hidup Manusia",
+        explanation: "'Pelancong' merujuk kepada manusia secara umum, maka ia dikategorikan sebagai Kata Nama Am Hidup Manusia."
+      },
+      {
+        category: "Warisan Sejarah Sabah",
+        question: "Siapakah pemimpin pasukan Gerila Kinabalu yang diabadikan di Tugu Peringatan Perang Petagas?",
+        options: ["Albert Kwok", "William Potts", "Francis Atkinson", "Mat Salleh"],
+        answer: "Albert Kwok",
+        explanation: "Albert Kwok memimpin pasukan Gerila Kinabalu yang terdiri daripada pejuang pelbagai kaum di Sabah menentang penjajahan."
+      },
+      {
+        category: "Kata Nama Am (Aras 4)",
+        question: "Manakah antara berikut merupakan KATA NAMA AM TAK HIDUP BUKAN INSTITUSI?",
+        options: ["gong", "muzium", "sekolah", "jabatan"],
+        answer: "gong",
+        explanation: "'Gong' ialah alat muzik tradisional bukan institusi, manakala 'muzium', 'sekolah', dan 'jabatan' ialah kata nama am tak hidup institusi."
+      },
+      {
+        category: "Warisan Sejarah Sabah",
+        question: "Menara Jam Atkinson (1905) dibina daripada kayu keras tempatan jenis...",
+        options: ["Merbau", "Cengal", "Jati", "Getah"],
+        answer: "Merbau",
+        explanation: "Menara Jam Atkinson dibina menggunakan kayu keras tempatan Merbau/Belian yang tahan lasak terhadap cuaca tropika."
+      },
+      {
+        category: "Kata Nama Am (Aras 4)",
+        question: "Kenal pasti KATA NAMA AM ABSTRAK dalam konteks pemeliharaan warisan sejarah Sabah.",
+        options: ["warisan", "pelabuhan", "bukit", "tugu"],
+        answer: "warisan",
+        explanation: "'Warisan' ialah kata nama am abstrak (konsep/nilai), manakala pelabuhan, bukit dan tugu ialah kata nama am konkrit."
+      }
+    ];
+
+    let activeQuestions = [];
+    let currentQIndex = 0;
+    let gameScore = 0;
+    let gameCombo = 1;
+    let timeLeft = 60;
+    let gameRunning = false;
+    let gameTimerInterval = null;
+    let balloons = [];
+    let particles = [];
+    let answerHistory = [];
+    let useCameraMode = false;
+
+    // Pemboleh ubah Penjejakan Tangan MediaPipe
+    let handsDetector = null;
+    let cameraInstance = null;
+    let pointerPos = { x: 0.5, y: 0.5, active: false, isPinching: false, landmarks: null };
+    let lastShotTime = 0;
+
+    // Penjana Kesan Audio Web Audio API (Tiada URL luar diperlukan)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSoundEffect(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      if (type === 'pop_correct') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(1040, now + 0.18);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'pop_wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.26);
+        osc.start(now);
+        osc.stop(now + 0.26);
+      } else if (type === 'shoot') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+    }
+
+    function resizeARCanvas() {
+      const canvas = document.getElementById('ar-game-canvas');
+      if (!canvas) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width || 800;
+      canvas.height = rect.height || 480;
+    }
+    window.addEventListener('resize', resizeARCanvas);
+
+    async function startARGame(withCamera) {
+      useCameraMode = withCamera;
+      resizeARCanvas();
+
+      // Tapis soalan mengikut pilihan pengguna
+      const mode = document.getElementById('quiz-mode-select').value;
+      if (mode === 'history') {
+        activeQuestions = questionBank.filter(q => q.category.includes('Sejarah'));
+      } else if (mode === 'katana') {
+        activeQuestions = questionBank.filter(q => q.category.includes('Kata Nama'));
+      } else {
+        activeQuestions = [...questionBank];
+      }
+
+      // Tetap semula pemboleh ubah permainan
+      currentQIndex = 0;
+      gameScore = 0;
+      gameCombo = 1;
+      timeLeft = 60;
+      answerHistory = [];
+      particles = [];
+      gameRunning = true;
+
+      document.getElementById('game-start-overlay').classList.add('hidden');
+      document.getElementById('game-result-overlay').classList.add('hidden');
+      updateHUD();
+      spawnQuestionBalloons();
+
+      // Mulakan Kamera & Google MediaPipe Hands jika dipilih
+      if (withCamera) {
+        await initMediaPipeHands();
+      } else {
+        document.getElementById('hand-dot').className = 'w-2.5 h-2.5 rounded-full bg-sky-400';
+        document.getElementById('hand-status-text').textContent = 'Mod Tetikus / Sentuh Aktif';
+      }
+
+      // Pemasa Undur 60 Saat
+      clearInterval(gameTimerInterval);
+      gameTimerInterval = setInterval(() => {
+        if (!gameRunning) return;
+        timeLeft--;
+        document.getElementById('game-timer').textContent = timeLeft + 's';
+        if (timeLeft <= 0) {
+          endARGame();
+        }
+      }, 1000);
+
+      requestAnimationFrame(arGameLoop);
+    }
+
+    async function initMediaPipeHands() {
+      const videoEl = document.getElementById('webcam-video');
+      const statusText = document.getElementById('hand-status-text');
+      const statusDot = document.getElementById('hand-dot');
+
+      try {
+        statusText.textContent = 'Memulakan Kamera & Google MediaPipe Hands...';
+        if (!handsDetector && typeof Hands !== 'undefined') {
+          handsDetector = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+          });
+          handsDetector.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.65,
+            minTrackingConfidence: 0.65
+          });
+          handsDetector.onResults(onMediaPipeResults);
+        }
+
+        if (typeof Camera !== 'undefined') {
+          cameraInstance = new Camera(videoEl, {
+            onFrame: async () => {
+              if (handsDetector && gameRunning) {
+                await handsDetector.send({ image: videoEl });
+              }
+            },
+            width: 640,
+            height: 480
+          });
+          await cameraInstance.start();
+          statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
+          statusText.textContent = 'MediaPipe Hands Aktif: Halakan Telunjuk & Pinch/Genggam!';
+        }
+      } catch (err) {
+        console.warn('Kamera tidak tersedia, bertukar ke mod tetikus:', err);
+        useCameraMode = false;
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+        statusText.textContent = 'Kamera tidak dikesan • Mod Tetikus/Sentuh Aktif';
+      }
+    }
+
+    function onMediaPipeResults(results) {
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const lm = results.multiHandLandmarks[0];
+        pointerPos.landmarks = lm;
+        pointerPos.active = true;
+
+        // Landmark 8 = Hujung Jari Telunjuk (songsangkan X untuk paparan cermin)
+        const indexTip = lm[8];
+        const thumbTip = lm[4];
+        const middleTip = lm[12];
+        const wrist = lm[0];
+
+        pointerPos.x = 1 - indexTip.x;
+        pointerPos.y = indexTip.y;
+
+        // Kira jarak Pinch (Ibu jari 4 & Telunjuk 8) atau Genggam Tangan
+        const pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
+        const fistDist = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y);
+
+        const triggered = pinchDist < 0.055 || fistDist < 0.18;
+        if (triggered && !pointerPos.isPinching) {
+          pointerPos.isPinching = true;
+          triggerTargetHit(pointerPos.x, pointerPos.y);
+        } else if (!triggered) {
+          pointerPos.isPinching = false;
+        }
+      } else {
+        pointerPos.active = false;
+        pointerPos.landmarks = null;
+      }
+    }
+
+    // Kawalan Sandaran Tetikus & Sentuhan
+    const arCanvas = document.getElementById('ar-game-canvas');
+    arCanvas.addEventListener('pointermove', e => {
+      if (!gameRunning) return;
+      const rect = arCanvas.getBoundingClientRect();
+      pointerPos.x = (e.clientX - rect.left) / rect.width;
+      pointerPos.y = (e.clientY - rect.top) / rect.height;
+      if (!useCameraMode) pointerPos.active = true;
+    });
+
+    arCanvas.addEventListener('pointerdown', e => {
+      if (!gameRunning) return;
+      const rect = arCanvas.getBoundingClientRect();
+      const nx = (e.clientX - rect.left) / rect.width;
+      const ny = (e.clientY - rect.top) / rect.height;
+      pointerPos.x = nx;
+      pointerPos.y = ny;
+      triggerTargetHit(nx, ny);
+    });
+
+    function spawnQuestionBalloons() {
+      const q = activeQuestions[currentQIndex];
+      if (!q) return;
+
+      document.getElementById('game-topic-tag').textContent = q.category;
+      document.getElementById('game-question-text').textContent = q.question;
+      document.getElementById('game-q-num').textContent = `${currentQIndex + 1}/${activeQuestions.length}`;
+
+      const canvas = document.getElementById('ar-game-canvas');
+      const w = canvas.width || 800;
+      const h = canvas.height || 480;
+
+      const palette = ['#D4AF37', '#2563EB', '#059669', '#9333EA'];
+      balloons = q.options.map((optText, idx) => {
+        const spacing = w / (q.options.length + 1);
+        return {
+          text: optText,
+          isCorrect: optText === q.answer,
+          x: spacing * (idx + 1),
+          y: h * 0.55 + (idx % 2 === 0 ? -30 : 30),
+          vx: (Math.random() - 0.5) * 1.4,
+          vy: (Math.random() - 0.5) * 1.2,
+          radius: Math.min(62, Math.max(46, w * 0.068)),
+          color: palette[idx % palette.length],
+          pulse: idx * 1.2
+        };
+      });
+    }
+
+    function triggerTargetHit(normX, normY) {
+      const now = Date.now();
+      if (now - lastShotTime < 350) return;
+      lastShotTime = now;
+
+      playSoundEffect('shoot');
+      const canvas = document.getElementById('ar-game-canvas');
+      const px = normX * canvas.width;
+      const py = normY * canvas.height;
+
+      // Kesan zarah tembakan
+      createExplosion(px, py, '#F3E5AB', 10);
+
+      for (let i = 0; i < balloons.length; i++) {
+        const b = balloons[i];
+        const dist = Math.hypot(px - b.x, py - b.y);
+        if (dist <= b.radius + 14) {
+          handleBalloonPop(b);
+          break;
+        }
+      }
+    }
+
+    function handleBalloonPop(balloon) {
+      const q = activeQuestions[currentQIndex];
+      if (balloon.isCorrect) {
+        playSoundEffect('pop_correct');
+        const earned = 100 * gameCombo;
+        gameScore += earned;
+        gameCombo++;
+        createExplosion(balloon.x, balloon.y, '#10B981', 35);
+
+        answerHistory.push({
+          question: q.question,
+          userAnswer: balloon.text,
+          correctAnswer: q.answer,
+          isCorrect: true,
+          explanation: q.explanation
+        });
+
+        currentQIndex++;
+        updateHUD();
+
+        if (currentQIndex >= activeQuestions.length) {
+          setTimeout(endARGame, 400);
+        } else {
+          spawnQuestionBalloons();
+        }
+      } else {
+        playSoundEffect('pop_wrong');
+        gameCombo = 1;
+        gameScore = Math.max(0, gameScore - 25);
+        createExplosion(balloon.x, balloon.y, '#EF4444', 25);
+        updateHUD();
+
+        // Tandakan belon salah digegarkan
+        balloon.vy = -4;
+        if (!answerHistory.some(item => item.question === q.question)) {
+          answerHistory.push({
+            question: q.question,
+            userAnswer: balloon.text,
+            correctAnswer: q.answer,
+            isCorrect: false,
+            explanation: q.explanation
+          });
+        }
+      }
+    }
+
+    function createExplosion(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.5 + Math.random() * 5.5;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: 3 + Math.random() * 5,
+          color,
+          alpha: 1
+        });
+      }
+    }
+
+    function updateHUD() {
+      document.getElementById('game-score').textContent = gameScore;
+      document.getElementById('game-combo').textContent = 'x' + gameCombo;
+      document.getElementById('cert-score-badge').textContent = gameScore + ' Mata';
+    }
+
+    function arGameLoop() {
+      if (!gameRunning) return;
+      const canvas = document.getElementById('ar-game-canvas');
+      const ctx = canvas.getContext('2d');
+      const videoEl = document.getElementById('webcam-video');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. Lukis Latar Belakang Webcam Masa Nyata (jika aktif) atau Latar Arked Warisan
+      if (useCameraMode && videoEl.readyState >= 2) {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, -w, 0, w, h);
+        ctx.restore();
+        // Lapisan gelap lutsinar supaya teks belon sangat jelas dibaca
+        ctx.fillStyle = 'rgba(15, 30, 54, 0.45)';
+        ctx.fillRect(0, 0, w, h);
+      } else {
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+        bgGrad.addColorStop(0, '#0F1E36');
+        bgGrad.addColorStop(1, '#2D1B0E');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Grid arked halus
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.12)';
+        ctx.lineWidth = 1;
+        for (let gx = 0; gx < w; gx += 45) {
+          ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+        }
+        for (let gy = 0; gy < h; gy += 45) {
+          ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+        }
+      }
+
+      // 2. Lukis Overlay Landmarks Tangan MediaPipe
+      if (useCameraMode && pointerPos.landmarks) {
+        const lm = pointerPos.landmarks;
+        ctx.strokeStyle = '#34D399';
+        ctx.lineWidth = 2.5;
+        const connections = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+        connections.forEach(([a, b]) => {
+          ctx.beginPath();
+          ctx.moveTo((1 - lm[a].x) * w, lm[a].y * h);
+          ctx.lineTo((1 - lm[b].x) * w, lm[b].y * h);
+          ctx.stroke();
+        });
+        lm.forEach((pt, index) => {
+          ctx.fillStyle = index === 8 ? '#FBBF24' : '#10B981';
+          ctx.beginPath();
+          ctx.arc((1 - pt.x) * w, pt.y * h, index === 8 ? 7 : 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      // 3. Kemas Kini & Lukis Belon Sasaran Terapung
+      balloons.forEach(b => {
+        b.pulse += 0.05;
+        b.x += b.vx;
+        b.y += b.vy + Math.sin(b.pulse) * 0.4;
+
+        // Lantunan dinding kanvas
+        if (b.x - b.radius < 20 || b.x + b.radius > w - 20) b.vx *= -1;
+        if (b.y - b.radius < 20 || b.y + b.radius > h - 45) b.vy *= -1;
+
+        // Tali belon
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y + b.radius);
+        ctx.quadraticCurveTo(b.x + 8, b.y + b.radius + 18, b.x - 4, b.y + b.radius + 34);
+        ctx.stroke();
+
+        // Badan Belon Berkilau
+        const radGrad = ctx.createRadialGradient(b.x - b.radius * 0.3, b.y - b.radius * 0.3, 6, b.x, b.y, b.radius);
+        radGrad.addColorStop(0, '#FFFFFF');
+        radGrad.addColorStop(0.25, b.color);
+        radGrad.addColorStop(1, '#0F1E36');
+
+        ctx.fillStyle = radGrad;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#F3E5AB';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Teks Jawapan di dalam Belon
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13px Inter';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        wrapCanvasText(ctx, b.text, b.x, b.y, b.radius * 1.65, 16);
+      });
+
+      // 4. Kemas Kini & Lukis Zarah Letupan
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.028;
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // 5. Lukis Penunjuk Sasaran (Crosshair) pada Hujung Jari Telunjuk
+      if (pointerPos.active) {
+        const cx = pointerPos.x * w;
+        const cy = pointerPos.y * h;
+        ctx.strokeStyle = pointerPos.isPinching ? '#10B981' : '#FBBF24';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, pointerPos.isPinching ? 16 : 24, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx - 30, cy); ctx.lineTo(cx + 30, cy);
+        ctx.moveTo(cx, cy - 30); ctx.lineTo(cx, cy + 30);
+        ctx.stroke();
+      }
+
+      requestAnimationFrame(arGameLoop);
+    }
+
+    function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      const lines = [];
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+          lines.push(line.trim());
+          line = words[n] + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line.trim());
+      const startY = y - ((lines.length - 1) * lineHeight) / 2;
+      lines.forEach((l, idx) => {
+        ctx.fillText(l, x, startY + idx * lineHeight);
+      });
+    }
+
+    function endARGame() {
+      gameRunning = false;
+      clearInterval(gameTimerInterval);
+
+      const totalQ = activeQuestions.length;
+      const correctCount = answerHistory.filter(a => a.isCorrect).length;
+      const accuracy = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
+
+      document.getElementById('result-final-score').textContent = gameScore;
+      document.getElementById('result-accuracy').textContent = accuracy + '%';
+      document.getElementById('cert-score-badge').textContent = gameScore + ' Mata';
+
+      const listEl = document.getElementById('result-analysis-list');
+      listEl.innerHTML = '';
+
+      if (answerHistory.length === 0) {
+        listEl.innerHTML = '<p class="text-slate-300 text-center py-4">Tiada belon dipecahkan dalam masa yang ditetapkan. Cuba lagi!</p>';
+      } else {
+        answerHistory.forEach((item, idx) => {
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-xl border ${item.isCorrect ? 'bg-emerald-950/60 border-emerald-500/40' : 'bg-red-950/60 border-red-500/40'}`;
+          card.innerHTML = `
+            <div class="flex items-center justify-between font-bold mb-1">
+              <span>${idx + 1}. ${item.question}</span>
+              <span class="${item.isCorrect ? 'text-emerald-400' : 'text-red-400'}">
+                ${item.isCorrect ? '✓ Tepat' : '✗ Kurang Tepat'}
+              </span>
+            </div>
+            <p class="text-slate-300 text-xs">Jawapan Anda: <strong>${item.userAnswer}</strong> | Jawapan Sahih: <strong class="text-heritage-gold">${item.correctAnswer}</strong></p>
+            <p class="text-slate-400 text-[11px] mt-1 italic">${item.explanation}</p>
+          `;
+          listEl.appendChild(card);
+        });
+      }
+
+      document.getElementById('game-result-overlay').classList.remove('hidden');
+    }
+
+    // 7. PENGURUSAN SIJIL DIGITAL (HALAMAN 8)
+    function updateCertificateName(val) {
+      const display = document.getElementById('cert-display-name');
+      display.textContent = val.trim() ? val.toUpperCase() : 'PENJELAJAH WARISAN SABAH';
+    }
+
+    window.onload = function() {
+      const today = new Date();
+      const options = { day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('cert-date').textContent = today.toLocaleDateString('ms-MY', options);
+    };
+  </script>
+</body>
+</html>
